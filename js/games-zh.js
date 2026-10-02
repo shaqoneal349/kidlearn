@@ -12,12 +12,12 @@
       const top = h('div', 'g-top'), work = h('div', 'c1-work');
       root.append(top, work);
       for (let i = 0; i < ctx.total && ctx.alive; i++) {
-        const p = ctx.pick(), s = p.skill, t0 = Date.now(); let ok;
+        const p = ctx.pick(), s = p.skill, t0 = Date.now(); let ok, info;
         work.replaceChildren();
         if (s.kind !== 'syl') {
           const q = K.mcq(s, { n: ctx.nOpts + (s.kind === 'bpmf' && ctx.L.sub.zh > 1 ? 1 : 0), mode: 'zy' });
           top.replaceChildren(K.ui.prompt(q)); K.sayQ(q);
-          ok = (await K.ui.choice(work, q, { cls: 'cars' })).ok;
+          info = await K.ui.choice(work, q, { cls: 'cars' }); ok = info.ok;
         } else {
           const it = K.pick(s.data), sp = K.zySplit(it.z), need = sp.syms.concat(s.tone && sp.tone !== 'ˉ' ? [sp.tone] : []);
           const q = { ask: '聽聲音，照順序把車廂掛上去', say: `${it.c}。${it.w}的${it.c}。` };
@@ -47,7 +47,7 @@
           await ctx.wait(1100); train.classList.add('go'); await ctx.wait(900);
         }
         if (!ctx.alive) return;
-        await ctx.report(p, ok, Date.now() - t0);
+        await ctx.report(p, ok, Date.now() - t0, info);
       }
       ctx.done();
     }
@@ -90,7 +90,7 @@
         const n = HZ[it.c].strokes.length, ok = mist <= Math.ceil(n * .25) && (outline || peeks === 0);
         A.sfx('ok'); box.classList.add('done'); work.append(h('div', 'c1-ans', { html: `<span class="zhc">${it.c}</span> <small>${it.w}　共 ${n} 畫</small>` }));
         await ctx.wait(1300);
-        await ctx.report(p, ok, Date.now() - t0);
+        await ctx.report(p, ok, Date.now() - t0, { hint: peeks > 0 });
       }
       ctx.done();
     }
@@ -103,11 +103,11 @@
       const top = h('div', 'g-top'), work = h('div', 'c3-work');
       root.append(top, work);
       for (let i = 0; i < ctx.total && ctx.alive; i++) {
-        const p = ctx.pick(), s = p.skill, t0 = Date.now(); let ok;
+        const p = ctx.pick(), s = p.skill, t0 = Date.now(); let ok, info;
         work.replaceChildren();
         if (s.kind !== 'comp') {
           const q = K.mcq(s, { n: ctx.nOpts }); top.replaceChildren(K.ui.prompt(q)); K.sayQ(q);
-          ok = (await K.ui.choice(work, q)).ok;
+          info = await K.ui.choice(work, q); ok = info.ok;
         } else {
           const it = K.pick(s.data), tx = `拼出「${it.w}」的「${it.c}」`;
           const q = { ask: '選出正確的部件', prompt: `<span class="zhs">拼出</span><span class="zhc tgt">${it.c}</span>`, say: tx };
@@ -140,25 +140,25 @@
           await ctx.wait(1500);
         }
         if (!ctx.alive) return;
-        await ctx.report(p, ok, Date.now() - t0);
+        await ctx.report(p, ok, Date.now() - t0, info);
       }
       ctx.done();
     }
   };
 
   K.games.c4 = {
-    id: 'c4', subj: 'zh', name: '錯字抓抓樂', icon: '🔍', cog: '辨識／應用', kinds: ['fill', 'poly'], n: 8,
+    id: 'c4', subj: 'zh', app: true, name: '錯字抓抓樂', icon: '🔍', cog: '辨識／應用', kinds: ['fill', 'poly'], n: 8,
     desc: '句子裡藏了錯字，把它抓出來！',
     async start(root, ctx) {
       const top = h('div', 'g-top'), work = h('div', 'c4-work');
       root.append(top, work);
       for (let i = 0; i < ctx.total && ctx.alive; i++) {
-        const p = ctx.pick(), s = p.skill, t0 = Date.now(); let ok;
+        const p = ctx.pick(), s = p.skill, t0 = Date.now(); let ok, info;
         work.replaceChildren();
         const it = s.kind === 'fill' ? K.pick(s.data) : null;
         if (!it || ctx.grade <= 2 || s.g <= 2 || it.a.length > 1 || Math.random() < .3) {
           const q = K.mcq(s, { n: ctx.nOpts }); top.replaceChildren(K.ui.prompt(q)); K.sayQ(q);
-          ok = (await K.ui.choice(work, q)).ok;
+          info = await K.ui.choice(work, q); ok = info.ok;
         } else { // 抓錯字：先點出錯字，再選正確的字
           const wrong = K.pick(it.o), idx = it.s.indexOf('＿'), text = it.s.replace('＿', wrong);
           top.replaceChildren(K.ui.prompt({ ask: '有一個字寫錯了，把它點出來！' }));
@@ -177,12 +177,12 @@
           const q = K.mkq({ ask: '應該是哪一個字？' }, `<span class="zhc">${it.a}</span>`, it.o.map(x => `<span class="zhc">${x}</span>`), 4);
           top.replaceChildren(K.ui.prompt(q));
           const r = await K.ui.choice(work, q);
-          ok = found && r.ok;
+          ok = found && r.ok; info = r;
           sent.children[idx].textContent = it.a; sent.children[idx].classList.add('fixed');
           await ctx.wait(700);
         }
         if (!ctx.alive) return;
-        await ctx.report(p, ok, Date.now() - t0);
+        await ctx.report(p, ok, Date.now() - t0, info);
       }
       ctx.done();
     }
@@ -203,7 +203,7 @@
         if (r.ok) pts++;
         foe.firstChild.textContent = r.ok ? '😲' : '🤗'; score.textContent = `⭐ × ${pts}　${K.pick(r.ok ? cheer : soft)}`;
         await ctx.wait(500);
-        await ctx.report(p, r.ok, r.ms);
+        await ctx.report(p, r.ok, r.ms, r);
       }
       ctx.done();
     }

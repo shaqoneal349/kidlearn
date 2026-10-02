@@ -14,22 +14,11 @@
       for (let i = 0; i < ctx.total && ctx.alive; i++) {
         const p = ctx.pick(), q = K.mcq(p.skill, { n: Math.min(6, ctx.nOpts + (ctx.grade > 3 ? 1 : 0)), mode: 'listen' });
         top.replaceChildren(K.ui.prompt(q)); sky.replaceChildren(); delete sky.dataset.lock; K.sayQ(q);
-        const t0 = Date.now();
-        const good = await new Promise(res => q.opts.forEach((o, j) => {
-          const b = h('button', 'balloon c' + j % 6, { html: `<span>${o}</span>`, style: `left:${(j + .5) / q.opts.length * 100}%;animation-duration:${dur + j % 3}s;animation-delay:-${(dur * (.3 + Math.random() * .25)).toFixed(1)}s` });
-          b.onclick = () => {
-            if (sky.dataset.lock) return; sky.dataset.lock = 1;
-            const ok = j === q.ans;
-            if (ok) { b.classList.add('pop'); A.sfx('pop'); A.sfx('ok'); }
-            else { b.classList.add('wrong'); sky.children[q.ans].classList.add('glow'); A.sfx('bad'); }
-            res(ok);
-          };
-          sky.append(b);
-        }));
-        const ms = Date.now() - t0;
-        cb = good ? cb + 1 : 0; combo.textContent = cb >= 2 ? `🔥 連續答對 ${cb}！` : '';
-        await ctx.wait(good ? 700 : 1800);
-        await ctx.report(p, good, ms);
+        const els = q.opts.map((o, j) => h('button', 'balloon c' + j % 6, { html: `<span>${o}</span>`, style: `left:${(j + .5) / q.opts.length * 100}%;animation-duration:${dur + j % 3}s;animation-delay:-${(dur * (.3 + Math.random() * .25)).toFixed(1)}s` }));
+        sky.append(...els);
+        const r = await K.ui.multi(q, els, { right: 'pop', wrong: 'wrong', reveal: 'glow', lock: () => sky.dataset.lock = 1, okWait: 700 });
+        cb = r.ok ? cb + 1 : 0; combo.textContent = cb >= 2 ? `🔥 連續答對 ${cb}！` : '';
+        await ctx.report(p, r.ok, r.ms, r);
       }
       ctx.done();
     }
@@ -47,34 +36,8 @@
         const items = s.kind === 'letter'
           ? K.sample([...s.data], pairsN).map(L => ({ k: L, a: enw(L), b: enw(L.toLowerCase()), say: L }))
           : K.sample(s.data, pairsN).map(it => ({ k: it.w, a: K.face(it), b: enw(it.w, 'sm'), say: it.w }));
-        const cards = K.shuffle(items.flatMap(it => [{ it, html: it.a }, { it, html: it.b }]));
-        const land = root.clientWidth > root.clientHeight, n = cards.length;
-        grid.style.setProperty('--c', land ? (n > 12 ? 8 : n > 8 ? 6 : 4) : (n > 12 ? 4 : n > 8 ? 3 : 2) + (n > 8 ? 0 : 0));
-        grid.replaceChildren();
-        await new Promise(res => {
-          let open = [], lock = false, left = items.length; const seen = new Set(), miss = {};
-          cards.forEach(c => {
-            const el = c.el = h('button', 'mcard', null, h('span', 'mc-f', { text: '❓' }), h('span', 'mc-b', { html: c.html }));
-            el.onclick = async () => {
-              if (lock || el.classList.contains('on')) return;
-              el.classList.add('on'); A.sfx('tap'); A.speak(c.it.say, 'en-US'); open.push(c);
-              if (open.length < 2) return;
-              lock = true; const [x, y] = open; open = [];
-              if (x.it === y.it) {
-                await ctx.wait(450); x.el.classList.add('ok'); y.el.classList.add('ok'); A.sfx('ok');
-                done++; ctx.progress(done, total);
-                await ctx.report(p, (miss[x.it.k] || 0) <= 1, 3000);
-                lock = false; if (!--left) res();
-              } else {
-                const partner = cards.find(o => o.it === x.it && o !== x);
-                if (seen.has(partner)) miss[x.it.k] = (miss[x.it.k] || 0) + 1; // 看過卻沒配成 → 還沒記住
-                seen.add(x); seen.add(y);
-                await ctx.wait(1000); x.el.classList.remove('on'); y.el.classList.remove('on'); lock = false;
-              }
-            };
-            grid.append(el);
-          });
-        });
+        items.forEach(it => it.lang = 'en-US');
+        await K.ui.memory(grid, ctx, p, items, () => ctx.progress(++done, total));
         await ctx.wait(600);
       }
       ctx.done();
@@ -127,7 +90,7 @@
   };
 
   K.games.e4 = {
-    id: 'e4', subj: 'en', name: '句子積木', icon: '🧱', cog: '應用', kinds: ['sentence'], n: 6,
+    id: 'e4', subj: 'en', app: true, name: '句子積木', icon: '🧱', cog: '應用', kinds: ['sentence'], n: 6,
     desc: '把單字積木排成正確的句子！',
     async start(root, ctx) {
       const top = h('div', 'g-top'), ans = h('div', 'e4-ans'), bank = h('div', 'tiles'), go = h('button', 'btn pri go', { text: '✔ 排好了' });
@@ -167,7 +130,7 @@
   };
 
   K.games.e5 = {
-    id: 'e5', subj: 'en', name: '聽力冒險跑酷', icon: '🏃', cog: '理解', kinds: ['vocab', 'prep', 'sentence', 'cloze', 'read'], n: 8,
+    id: 'e5', subj: 'en', app: true, name: '聽力冒險跑酷', icon: '🏃', cog: '理解', kinds: ['vocab', 'prep', 'sentence', 'cloze', 'read'], n: 8,
     desc: '聽指令，選對的門才能繼續跑！',
     async start(root, ctx) {
       const top = h('div', 'g-top'), stage = h('div', 'e5-stage'), doors = h('div', 'e5-doors'), runner = h('div', 'e5-runner', { text: '🏃' });
@@ -178,23 +141,10 @@
         doors.replaceChildren(); top.replaceChildren(); runner.style.left = '8%'; stage.classList.add('run');
         await ctx.wait(900); stage.classList.remove('run');
         top.replaceChildren(K.ui.prompt(q)); K.sayQ(q);
-        const t0 = Date.now();
-        const good = await new Promise(res => q.opts.forEach((o, j) => {
-          const d = h('button', 'door', { html: o });
-          d.onclick = () => {
-            if (doors.dataset.lock) return; doors.dataset.lock = 1;
-            const ok = j === q.ans; runner.style.left = (d.offsetLeft + d.offsetWidth / 2 - 30) + 'px';
-            setTimeout(() => {
-              A.sfx(ok ? 'ok' : 'bad'); d.classList.add(ok ? 'open' : 'bump');
-              if (!ok) doors.children[q.ans].classList.add('open', 'show');
-              res(ok);
-            }, 500);
-          };
-          doors.append(d);
-        }));
-        const ms = Date.now() - t0;
-        await ctx.wait(good ? 800 : 1900); delete doors.dataset.lock;
-        await ctx.report(p, good, ms);
+        const els = q.opts.map(o => h('button', 'door', { html: o }));
+        doors.append(...els); delete doors.dataset.lock;
+        const r = await K.ui.multi(q, els, { right: 'open', wrong: 'bump', reveal: 'open', lock: () => doors.dataset.lock = 1, onPick: d => runner.style.left = (d.offsetLeft + d.offsetWidth / 2 - 30) + 'px' });
+        await ctx.report(p, r.ok, r.ms, r);
       }
       ctx.done();
     }

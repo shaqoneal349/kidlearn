@@ -12,7 +12,7 @@
       root.append(top, pond);
       const fish = (html, i) => h('button', 'fish f' + i % 4, { html: `<span>${html}</span>`, style: `animation-delay:-${(Math.random() * 3).toFixed(1)}s` });
       for (let i = 0; i < ctx.total && ctx.alive; i++) {
-        const p = ctx.pick(), s = p.skill, t0 = Date.now(); let ok;
+        const p = ctx.pick(), s = p.skill, t0 = Date.now(); let ok, info;
         pond.replaceChildren(); pond.className = 'm1-pond';
         if (s.kind === 'compare') { // 釣起所有比 N 大／小的魚
           let N, nums, tg; const big = Math.random() < .5, max = s.data.max;
@@ -55,19 +55,10 @@
           const q = K.mcq(s, { n: ctx.nOpts + 1 });
           if (s.kind === 'arith') q.ask = '釣起答案一樣的魚';
           top.replaceChildren(K.ui.prompt(q)); K.sayQ(q);
-          ok = await new Promise(res => q.opts.forEach((o, j) => {
-            const f = fish(o, j);
-            f.onclick = () => {
-              if (pond.dataset.lock) return; pond.dataset.lock = 1;
-              const good = j === q.ans; A.sfx(good ? 'ok' : 'bad');
-              f.classList.add(good ? 'caught' : 'wrong'); if (!good) pond.children[q.ans].classList.add('glow');
-              res(good);
-            };
-            pond.append(f);
-          }));
-          await ctx.wait(ok ? 800 : 1800); delete pond.dataset.lock;
+          const els = q.opts.map(fish); pond.append(...els);
+          info = await K.ui.multi(q, els, { right: 'caught', wrong: 'wrong', reveal: 'glow' }); ok = info.ok;
         }
-        await ctx.report(p, ok, Date.now() - t0);
+        await ctx.report(p, ok, Date.now() - t0, info);
       }
       ctx.done();
     }
@@ -89,9 +80,10 @@
         const p = ctx.pick(), q = K.mcq(p.skill, { n: ctx.nOpts });
         panel.replaceChildren(h('div', 'm2-q', { html: q.prompt }));
         const useKey = ctx.grade >= 2 && ctx.L.sub.ma >= 3 && typeof q.item.ans === 'number' && Number.isInteger(q.item.ans) && !q.item.opts;
+        const fluent = K.engine.stage(p.skill.id) >= 1; // 新技能不比速度，熟悉之後才有加速挑戰
         const r = await (useKey ? K.ui.keypad(panel, q) : K.ui.choice(panel, q));
-        speed = r.ok ? Math.min(3, speed + (r.ms < 4000 ? .45 : .25)) : Math.max(.6, speed - .4); setSpeed();
-        await ctx.report(p, r.ok, r.ms);
+        speed = r.ok || r.fixed ? Math.min(3, speed + (fluent && r.ms < 4000 ? .45 : .25)) : fluent ? Math.max(.6, speed - .4) : speed; setSpeed();
+        await ctx.report(p, r.ok, r.ms, r);
       }
       clearInterval(tick);
       const d = Math.round(dist); if (d > best) { ctx.L.best.m2 = d; ctx.note = `🏁 新紀錄！跑了 ${d} 公尺`; } else ctx.note = `🏁 跑了 ${d} 公尺`;
@@ -100,14 +92,14 @@
   };
 
   K.games.m3 = {
-    id: 'm3', subj: 'ma', name: '小小店長', icon: '🏪', cog: '應用', kinds: ['shop'], n: 6,
+    id: 'm3', subj: 'ma', app: true, name: '小小店長', icon: '🏪', cog: '應用', kinds: ['shop'], n: 6,
     desc: '你是小店長！幫客人算錢、找零。',
     async start(root, ctx) {
       const shop = h('div', 'm3-shop'), work = h('div', 'm3-work');
       root.append(shop, work);
       for (let i = 0; i < ctx.total && ctx.alive; i++) {
         const p = ctx.pick(), q = K.shopGen(p.skill), t0 = Date.now(), cust = K.pick(['🧒', '👧', '👨', '👩', '👵', '👴']);
-        let ok;
+        let ok, info;
         if (q.offers) {
           shop.replaceChildren(h('div', 'm3-cust', { text: cust }), h('div', 'm3-bubble', { text: q.want }));
           A.speak(q.want);
@@ -145,7 +137,7 @@
           });
         }
         if (!ctx.alive) return;
-        await ctx.report(p, ok, Date.now() - t0);
+        await ctx.report(p, ok, Date.now() - t0, info);
       }
       ctx.done();
     }
@@ -158,11 +150,11 @@
       const top = h('div', 'g-top'), work = h('div', 'm4-work');
       root.append(top, work);
       for (let i = 0; i < ctx.total && ctx.alive; i++) {
-        const p = ctx.pick(), s = p.skill, t0 = Date.now(); let ok;
+        const p = ctx.pick(), s = p.skill, t0 = Date.now(); let ok, info;
         work.replaceChildren();
         if (s.kind !== 'area') {
           const q = K.mcq(s, { n: ctx.nOpts }); top.replaceChildren(K.ui.prompt(q)); K.sayQ(q);
-          ok = (await K.ui.choice(work, q)).ok;
+          info = await K.ui.choice(work, q); ok = info.ok;
         } else {
           const m = s.data.mode, ROWS = m === 'sym' ? 5 : 6, COLS = 6, on = new Set(), fixed = new Set();
           let tx, check;
@@ -194,24 +186,24 @@
           });
         }
         if (!ctx.alive) return;
-        await ctx.report(p, ok, Date.now() - t0);
+        await ctx.report(p, ok, Date.now() - t0, info);
       }
       ctx.done();
     }
   };
 
   K.games.m5 = {
-    id: 'm5', subj: 'ma', name: '數字偵探', icon: '🕵️', cog: '推理', kinds: ['pattern', 'seq', 'balance', 'sudoku'], n: 6,
+    id: 'm5', subj: 'ma', app: true, name: '數字偵探', icon: '🕵️', cog: '推理', kinds: ['pattern', 'seq', 'balance', 'sudoku', 'chart'], n: 6,
     desc: '找出規律、解開謎題，你是小偵探！',
     async start(root, ctx) {
       const top = h('div', 'g-top'), work = h('div', 'm5-work');
       root.append(top, work);
       for (let i = 0; i < ctx.total && ctx.alive; i++) {
-        const p = ctx.pick(), s = p.skill, t0 = Date.now(); let ok;
+        const p = ctx.pick(), s = p.skill, t0 = Date.now(); let ok, info;
         work.replaceChildren();
         if (s.kind !== 'sudoku') {
           const q = K.mcq(s, { n: ctx.nOpts }); top.replaceChildren(K.ui.prompt(q)); K.sayQ(q);
-          ok = (await K.ui.choice(work, q)).ok;
+          info = await K.ui.choice(work, q); ok = info.ok;
         } else {
           const sd = K.sudoku(s.data.n), n = sd.n; let sel = null, left = 0, err = 0;
           const tx = `每一排、每一行、每個粗框裡，1 到 ${n} 只能出現一次`;
@@ -235,7 +227,7 @@
           await ctx.wait(900);
         }
         if (!ctx.alive) return;
-        await ctx.report(p, ok, Date.now() - t0);
+        await ctx.report(p, ok, Date.now() - t0, info);
       }
       ctx.done();
     }

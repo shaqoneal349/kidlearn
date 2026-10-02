@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>小小學習家</title>
+<meta name="description" content="小學生英文、數學、國語學習遊戲">
+<meta name="theme-color" content="#2563eb">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="小小學習家">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div id="app"></div>
+<div id="overlay"></div>
+<script src="js/core.js"></script>
+<script src="js/content-en.js"></script>
+<script src="js/content-ma.js"></script>
+<script src="js/content-zh.js"></script>
+<script src="vendor/hanzi-writer.min.js"></script>
+<script src="vendor/hanzi-data.js"></script>
+<script src="js/games-en.js"></script>
+<script src="js/games-ma.js"></script>
+<script src="js/games-zh.js"></script>
+<script src="js/shell.js"></script>
+<script>if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js');</script>
+</body>
+</html>

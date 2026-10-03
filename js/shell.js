@@ -2,7 +2,7 @@
 // 殼層：學習者檔案、冒險島首頁與今日路線、遊戲框架、結算與錯題回顧、複習／魔王／檢定／診斷、我的島、家長專區、更新提示
 (() => {
   const K = KL, h = K.h, A = K.audio, E = K.engine;
-  const VERSION = '3.2.0';
+  const VERSION = '3.3.0'; K.VERSION = VERSION;
   const app = () => document.getElementById('app'), ov = () => document.getElementById('overlay');
   const SUBJ = { en: { n: '英文', i: '🔤', isle: '英文島' }, ma: { n: '數學', i: '🔢', isle: '數學島' }, zh: { n: '國語', i: '📖', isle: '國語島' } };
   const AV = ['🦊', '🐼', '🐰', '🐯', '🐸', '🦄', '🐵', '🐱', '🧑‍🚀', '🧙', '🦸', '🥷'];
@@ -10,12 +10,13 @@
   let cur = null, greeted = false, lastBreak = Date.now(), installEvt = null, swReg = null;
 
   const closeModal = () => ov().replaceChildren();
-  const show = node => { if (cur) cur.exit(); K.cur = null; A.stop(); closeModal(); app().replaceChildren(node); window.scrollTo(0, 0); applyPrefs(); };
+  const show = node => { document.querySelectorAll('.coach').forEach(x => x.remove()); if (cur) cur.exit(); K.cur = null; A.stop(); closeModal(); app().replaceChildren(node); window.scrollTo(0, 0); applyPrefs(); };
   const modal = (node, cls = '') => ov().replaceChildren(h('div', 'modal-bg'), h('div', 'modal ' + cls, null, node));
   const stars = n => '★'.repeat(n) + '☆'.repeat(3 - n);
   const btn = (text, cls, onclick) => h('button', 'btn ' + (cls || ''), { text, onclick: e => { A.sfx('tap'); onclick(e); } });
   const lvText = (L, s) => `${GN[L.gs[s]]} ${stars(L.sub[s])}`;
   const toast = (text, onclick) => { const t = h('button', 'toast', { text, onclick: () => { t.remove(); onclick && onclick(); } }); document.body.append(t); if (!onclick) setTimeout(() => t.remove(), 4000); };
+  K.toast = t => toast(t);
   function applyPrefs() {
     const S = K.store.data.settings, L = E.L(), b = document.body;
     b.classList.toggle('rm', !S.motion); b.classList.toggle('big', !!S.big); b.dataset.theme = L ? L.theme : 'kid';
@@ -56,17 +57,30 @@
   const nextStop = () => E.route().findIndex(s => !s.done);
   function runStop(i) { const st = E.route()[i]; st.k === 'game' ? play(st.id, i) : quiz(st.k, i); }
   const calm = g => g && (g.id === 'e6' || g.id === 'c8' || g.id === 'c2'); // 超時後仍可玩的「無時限」活動
+  // 遊戲卡上的能力值：這款遊戲在目前年級的知識點平均掌握度（0–99）
+  const gamePct = (g, L) => { const ks = K.skills.filter(k => K.fits(g, k) && k.g === L.gs[g.subj]); if (!ks.length) return 0; return Math.min(99, Math.round(ks.reduce((a, k) => a + ((L.skills[k.id] || {}).score || 0), 0) / ks.length)); };
+  // 新手引導的小手：指著要點的地方，點任何地方就消失
+  function coach(target, text) {
+    if (!target || !target.isConnected) return;
+    document.querySelectorAll('.coach').forEach(x => x.remove());
+    const r = target.getBoundingClientRect(), c = h('div', 'coach', { style: `left:${r.left + r.width / 2}px;top:${r.top + r.height * .6}px` }, h('span', 'coach-hand', { text: '👆' }), text && h('span', 'coach-tip', { text }));
+    document.body.append(c);
+    const off = () => { c.remove(); document.removeEventListener('pointerdown', off, true); document.removeEventListener('scroll', off, true); };
+    document.addEventListener('pointerdown', off, true); document.addEventListener('scroll', off, true); setTimeout(off, 7000);
+  }
   function showHome() {
     const L = E.L(); if (!L) return showProfiles();
     const pet = K.pet(), over = E.overLimit(), route = E.route(), nx = nextStop(), wk = E.weekDays(), ex = L.theme === 'explorer';
-    const head = h('div', 'hm-head', null,
-      h('button', 'hm-me', { onclick: () => { A.sfx('tap'); showProfiles(); } }, h('span', 'pf-av sm', { text: L.avatar }), h('b', null, { text: L.name })),
-      h('span', 'hm-wk', { text: `🗓️ 這週 ${wk} 天` }),
+    // 頂部狀態列（遊戲風 HUD）：頭像名牌＋三個計數膠囊＋我的島＋家長
+    const pill = (icon, n, label, cls) => h('span', 'hud-pill ' + cls, { title: label }, h('i', null, { text: icon }), h('b', null, { text: n }), h('small', null, { text: label }));
+    const head = h('div', 'hm-head hud', null,
+      h('button', 'hm-me', { onclick: () => { A.sfx('tap'); showProfiles(); } }, h('span', 'pf-av sm', { text: L.avatar }), h('span', 'hm-id', null, h('b', null, { text: L.name }), h('small', null, { text: `${pet.e} ${pet.name}` }))),
+      h('div', 'hud-pills', null, pill('🗓️', wk, '這週天數', 'p-day'), pill('🎖️', L.stickers.length, '收藏', 'p-stk'), pill('⭐', E.masteredCount(), '精熟技能', 'p-star')),
       h('button', 'hm-pet', { onclick: () => { A.sfx('tap'); showCollection(); } }, h('span', null, { text: ex ? '🧭' : '🗺️' }), h('small', null, { text: ex ? '基地' : '我的島' })),
       h('button', 'ib', { text: '👪', 'aria-label': '家長專區', onclick: () => { A.sfx('tap'); parentGate(); } }));
     // 我的小島：裝飾擺在固定的格位，不會疊在一起
     const SLOTS = [[6, 40], [18, 22], [30, 46], [42, 18], [58, 44], [70, 20], [82, 40], [92, 24], [12, 60], [26, 68], [40, 62], [62, 66], [76, 60], [88, 68], [50, 72], [4, 76]];
-    const decos = L.stickers.slice(-SLOTS.length), isle = h('button', 'isle' + (ex ? ' ex' : ''), { onclick: () => { A.sfx('tap'); showCollection(); } }, h('div', 'isle-land'), h('span', 'isle-pet', { text: pet.e }));
+    const decos = L.stickers.slice(-SLOTS.length), isle = h('button', 'isle' + (ex ? ' ex' : ''), { onclick: () => { A.sfx('tap'); showCollection(); } }, h('div', 'isle-land'), h('span', 'isle-tree', { text: ex ? '🏕️' : '🌴', style: 'left:20%' }), h('span', 'isle-tree', { text: ex ? '🔭' : '🌳', style: 'right:20%;font-size:34px' }), h('span', 'isle-pet', { text: pet.e }));
     decos.forEach((d, i) => isle.append(h('span', 'isle-d', { text: d, style: `left:${SLOTS[i][0]}%;bottom:${SLOTS[i][1] - 10}%;font-size:${22 + (i % 3) * 4}px` })));
     const path = h('div', 'route', null, route.map((st, i) => {
       const inf = stopInfo(st), state = st.done ? 'done' : i === nx ? 'next' : 'later';
@@ -80,9 +94,15 @@
       return h('section', 'subj s-' + s, null,
         h('h2', null, { html: `${SUBJ[s].i} ${SUBJ[s].isle} <small>${GN[L.gs[s]]}</small> <span class="st">${stars(L.sub[s])}</span>` }),
         h('div', 'isl-bar', null, h('i', null, { style: `width:${mine.length ? solid / mine.length * 100 : 0}%` })),
-        h('div', 'gcards', null, Object.values(K.games).filter(g => g.subj === s).map(g => { const off = over && !calm(g); return h('button', 'gcard' + (off ? ' off' : ''), { onclick: () => { if (off) return A.speak('今天玩得很棒了，明天再來吧！'); A.sfx('tap'); play(g.id); } }, h('span', 'gi', { text: g.icon }), h('span', 'gn', { text: g.name })); })));
+        h('div', 'gcards', null, Object.values(K.games).filter(g => g.subj === s).map(g => {
+          const off = over && !calm(g), pc = gamePct(g, L), isNew = !L.last[g.id];
+          // 收藏卡風格：左上能力值、中間大圖示、下方名牌與技能類型
+          return h('button', 'gcard' + (off ? ' off' : '') + (isNew ? ' new' : ''), { onclick: () => { if (off) return A.speak('今天玩得很棒了，明天再來吧！'); A.sfx('tap'); play(g.id); } },
+            h('span', 'gc-rt', { text: isNew ? 'NEW' : pc }), h('span', 'gi', { text: g.icon }), h('span', 'gn', { text: g.name }), h('span', 'gc-cog', { text: g.cog }));
+        })));
     }));
     show(h('div', 'screen home', null, head, isle, over ? h('div', 'banner', { text: `${pet.e} 今天玩得很棒！眼睛休息一下。想安靜看故事或寫字還是可以喔。` }) : board, h('h3', 'free-t', { text: '🏝️ 自由探險' }), cols));
+    if (!Object.values(L.days).some(d => d.rounds) && !over) setTimeout(() => coach(document.querySelector('.go-big'), '按這裡開始今天的冒險！'), 900);
     if (!greeted) { greeted = true; A.speak(over ? '今天玩得很棒！讓眼睛休息一下，明天再來吧！' : nx < 0 ? `${L.name}，今天的冒險完成了！` : `嗨，${L.name}！今天的冒險準備好了，按出發吧！`); }
   }
 
@@ -115,6 +135,7 @@
     Promise.race([A.speak(game.desc).then(() => new Promise(r => setTimeout(r, 400))), new Promise(r => intro.onclick = r), new Promise(r => setTimeout(r, 5000))]).then(() => {
       if (!ctx.alive) return; A.stop(); intro.remove(); round.start = Date.now();
       game.start(root, ctx).catch(e => console.error(e));
+      if (!L.last[game.id]) setTimeout(() => ctx.alive && coach(root.querySelector('.q-snd'), '聽不清楚，按這裡再聽一次'), 1500); // 第一次玩這款：指一下喇叭
     });
   }
   function demoCard(skill) {
@@ -317,6 +338,7 @@
         h('p', 'sub', { text: 'Android：「設定 → 一般管理 → 文字轉語音」，引擎選 Google，語言選「中文（台灣）」並下載語音資料。' }),
         h('p', 'sub', { text: '注音符號使用教育部開放音檔，不受裝置影響。' })));
   }
+  let pTab = 'report';
   function showParent() {
     const L = E.L(), D = K.store.data, S = D.settings, today = K.today();
     const sel = (opts, val, on) => { const s = h('select', 'inp sm', { onchange: e => { on(e.target.value); K.store.save(); } }, opts.map(([v, t]) => h('option', null, { value: v, text: t }))); s.value = val; return s; };
@@ -377,7 +399,16 @@
     const about = h('div', 'card', null, h('h3', null, { text: '📲 安裝與更新' }), h('p', 'sub', { html: 'iPhone／iPad：用 Safari 開啟 → 分享按鈕 → 「加入主畫面」。<br>Android：用 Chrome 開啟 → 選單 → 「安裝應用程式」或「加到主畫面」。<br>安裝後可離線使用；有新版本時畫面下方會出現更新提示。' }),
       h('div', 'frow', null, btn('檢查更新', '', async () => { if (swReg) { await swReg.update(); toast('已檢查，有新版本時會出現提示'); } else toast('目前不是安裝版'); }), h('span', 'sub', { text: `版本 ${VERSION}｜知識點 ${K.skills.length} 個｜遊戲 ${Object.keys(K.games).length} 款` })),
       h('p', 'sub', { html: '素材來源：注音音檔 © 2017 教育部《國語注音符號手冊》開放部件（CC BY 4.0）；筆順 Hanzi Writer（MIT）與 Make Me a Hanzi；字型 LXGW WenKai TC、Andika（SIL OFL）；英文字彙依教育部「國民中小學英語基本字詞」。' }));
-    show(h('div', 'screen parent', null, h('div', 'hm-head', null, btn('🏠 回小島', '', showHome), h('h1', null, { text: '家長專區' })), set, voiceCard(), usage, trend, weak, heat, tests, backup, about));
+    const help = h('div', 'card', null, h('h3', null, { text: '📖 使用說明' }), h('p', 'sub', { text: '家長端與小朋友端的操作教學、常見問題。' }),
+      h('div', 'frow two', null, btn('📖 使用手冊', 'soft', () => K.help.manual()), btn('🎪 重看介紹', 'soft', () => K.help.intro())));
+    const fb = h('div', 'card', null, h('h3', null, { text: '💬 意見回饋' }), h('p', 'sub', { text: '用起來哪裡卡卡的、哪題有錯、想要什麼功能，都告訴我。你的建議會直接影響下一版怎麼做。' }),
+      btn('我有話想說 💬', 'pri wide', () => K.help.feedback()));
+    // 分頁：報告／技能地圖／設定／資料
+    const TABS = [['report', '報告', [usage, trend, weak, tests]], ['map', '技能地圖', [heat]], ['set', '設定', [help, fb, set, voiceCard()]], ['data', '資料', [backup, about]]];
+    const body = h('div', 'pt-body'), tabs = h('div', 'pt-tabs');
+    const paint = () => { tabs.replaceChildren(...TABS.map(([k, t]) => h('button', k === pTab ? 'on' : '', { text: t, onclick: () => { pTab = k; paint(); } }))); body.replaceChildren(...TABS.find(x => x[0] === pTab)[2]); app().querySelector('.parent') && (app().querySelector('.parent').scrollTop = 0); };
+    show(h('div', 'screen parent', null, h('div', 'pt-head', null, h('div', 'pt-top', null, h('h1', null, { text: '👪 家長專區' }), h('button', 'pt-back', { text: '返回小孩端', onclick: () => { A.sfx('tap'); showHome(); } })), tabs), body));
+    paint();
   }
 
   // ---------- 啟動 ----------
@@ -392,6 +423,8 @@
     if ('speechSynthesis' in window) { speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged = () => { }; }
     document.addEventListener('visibilitychange', () => document.hidden && A.stop());
     E.L() ? showHome() : showProfiles();
+    if (!K.store.data.settings.introSeen) setTimeout(() => K.help.intro(), 300); // 第一次開啟：功能介紹蓋屏
+    setTimeout(() => K.help.flush(), 3000); // 補送之前沒送出的意見回饋
   });
   K.shell = { showHome, showProfiles, play, quiz, showParent, showCollection };
 })();

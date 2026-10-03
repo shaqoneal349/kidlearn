@@ -19,7 +19,7 @@
           top.replaceChildren(K.ui.prompt(q)); K.sayQ(q);
           info = await K.ui.choice(work, q, { cls: 'cars' }); ok = info.ok;
         } else {
-          const it = K.pick(s.data), sp = K.zySplit(it.z), need = sp.syms.concat(s.tone && sp.tone !== 'ˉ' ? [sp.tone] : []);
+          const it = K.pi(s), sp = K.zySplit(it.z), need = sp.syms.concat(s.tone && sp.tone !== 'ˉ' ? [sp.tone] : []);
           const q = { ask: '聽聲音，照順序把車廂掛上去', say: `${it.c}。${it.w}的${it.c}。` };
           top.replaceChildren(K.ui.prompt(q)); K.sayQ(q);
           const train = h('div', 'train', null, h('span', 'loco', { text: '🚂' }), need.map(() => h('span', 'car')));
@@ -97,7 +97,7 @@
   };
 
   K.games.c3 = {
-    id: 'c3', subj: 'zh', name: '部件拼字工坊', icon: '🧩', cog: '結構理解', kinds: ['comp', 'radical', 'phonetic'], n: 6,
+    id: 'c3', subj: 'zh', name: '部件拼字工坊', icon: '🧩', cog: '結構理解', kinds: ['comp', 'radical', 'phonetic'], accept: s => ['comp', 'radical', 'phonetic'].includes(s.kind) || (s.kind === 'char' && s.g >= 4), n: 6,
     desc: '把部件組合起來，變出一個字！',
     async start(root, ctx) {
       const top = h('div', 'g-top'), work = h('div', 'c3-work');
@@ -109,7 +109,7 @@
           const q = K.mcq(s, { n: ctx.nOpts }); top.replaceChildren(K.ui.prompt(q)); K.sayQ(q);
           info = await K.ui.choice(work, q); ok = info.ok;
         } else {
-          const it = K.pick(s.data), tx = `拼出「${it.w}」的「${it.c}」`;
+          const it = K.pi(s), tx = `拼出「${it.w}」的「${it.c}」`;
           const q = { ask: '選出正確的部件', prompt: `<span class="zhs">拼出</span><span class="zhc tgt">${it.c}</span>`, say: tx };
           top.replaceChildren(K.ui.prompt(q)); K.sayQ(q);
           const others = K.uniq(s.data.flatMap(x => x.p)).filter(x => !it.p.includes(x));
@@ -155,7 +155,7 @@
       for (let i = 0; i < ctx.total && ctx.alive; i++) {
         const p = ctx.pick(), s = p.skill, t0 = Date.now(); let ok, info;
         work.replaceChildren();
-        const it = s.kind === 'fill' ? K.pick(s.data) : null;
+        const it = s.kind === 'fill' ? K.pi(s) : null;
         if (!it || ctx.grade <= 2 || s.g <= 2 || it.a.length > 1 || Math.random() < .3) {
           const q = K.mcq(s, { n: ctx.nOpts }); top.replaceChildren(K.ui.prompt(q)); K.sayQ(q);
           info = await K.ui.choice(work, q); ok = info.ok;

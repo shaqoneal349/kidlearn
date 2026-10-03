@@ -1,6 +1,6 @@
 'use strict';
-// 小小學習家 — 核心：工具、存檔、語音音效、學習引擎
-window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {} };
+// 小小學習家 — 核心：工具、存檔、語音音效、學習引擎、共用 UI
+window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {}, cur: null };
 (() => {
   const K = KL;
 
@@ -10,6 +10,7 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {} };
   K.shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
   K.sample = (a, n) => K.shuffle(a).slice(0, n);
   K.uniq = a => [...new Set(a)];
+  K.strip = s => String(s == null ? '' : s).replace(/<[^>]+>/g, '').trim();
   K.h = (tag, cls, props, ...kids) => {
     const e = document.createElement(tag);
     if (cls) e.className = cls;
@@ -27,6 +28,7 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {} };
   K.dstr = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   K.today = () => K.dstr(new Date());
   K.addDays = (s, n) => { const d = new Date(s + 'T12:00:00'); d.setDate(d.getDate() + n); return K.dstr(d); };
+  K.daysBetween = (a, b) => Math.round((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 864e5);
 
   // 知識點註冊
   K.add = (subj, g, sub, id, name, kind, data, x) => {
@@ -36,13 +38,27 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {} };
   // 選擇題組裝：a 正解、ds 干擾項（皆為 HTML 字串）
   K.mkq = (base, a, ds, n = 4) => {
     a = String(a);
-    ds = K.uniq(ds.map(String)).filter(x => x !== a);
+    const vis = x => /<svg|class="(sw|scene|em)/.test(x); // 圖像選項不用文字去重
+    ds = K.uniq(ds.map(String)).filter(x => x !== a && (vis(x) || !K.strip(x) || K.strip(x) !== K.strip(a)));
     const opts = K.shuffle([a, ...K.shuffle(ds).slice(0, n - 1)]);
     return Object.assign(base, { opts, ans: opts.indexOf(a) });
   };
-  K.mcq = (skill, o = {}) => { const q = K.mcqKinds[skill.kind](skill, o.n || 4, o.mode); q.skill = skill; return q; };
+  K.mcq = (skill, o = {}) => { const q = K.mcqKinds[skill.kind](skill, o.n || 4, o.mode); q.skill = skill; if (!q.why && skill.why) q.why = skill.why; return q; };
   K.fits = (g, s) => g.subj === s.subj && (g.accept ? g.accept(s) : g.kinds.includes(s.kind));
   K.gamesOf = skill => Object.values(K.games).filter(g => K.fits(g, skill));
+  // 抽題：有產生器就生成新題；靜態題庫避開本回合與最近幾回合出過的
+  K.pi = (s, pool) => {
+    if (s.gen && (!s.data || !s.data.length || (!pool && Math.random() < .55))) return s.gen();
+    pool = pool || s.data; if (!pool || !pool.length) return s.gen();
+    const L = K.engine.L(), seen = L ? ((L.seen = L.seen || {})[s.id] = L.seen[s.id] || []) : [];
+    const used = K.cur ? (K.cur.used[s.id] = K.cur.used[s.id] || new Set()) : new Set();
+    const idx = pool.map((_, i) => i);
+    let cand = idx.filter(i => !used.has(i) && !seen.includes(i));
+    if (cand.length < Math.max(1, Math.floor(pool.length * .25))) cand = idx.filter(i => !used.has(i));
+    if (!cand.length) cand = idx;
+    const i = K.pick(cand); used.add(i); seen.push(i); while (seen.length > Math.min(40, Math.floor(pool.length * .7))) seen.shift();
+    return pool[i];
+  };
   const mean = a => a.reduce((x, y) => x + y, 0) / a.length;
   const median = a => { const b = a.slice().sort((x, y) => x - y); return b[Math.floor(b.length / 2)]; };
   const push = (arr, v, max) => { arr.push(v); while (arr.length > max) arr.shift(); };
@@ -54,26 +70,28 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {} };
     load() {
       let d = null;
       try { d = JSON.parse(localStorage.getItem(KEY)); } catch (e) { }
-      if (!d || !d.learners) d = { v: 2, learners: [], current: null, settings: { sfx: true, voice: true } };
-      d.learners.forEach(this.migrate); d.v = 2;
+      if (!d || !d.learners) d = { v: 3, learners: [], current: null, settings: {} };
+      d.settings = Object.assign({ sfx: true, voice: true, vib: true, rate: 1, motion: true, big: false, enAccent: 'US', enGender: 'f', enVoice: '', zhVoice: '', pin: '' }, d.settings);
+      d.learners.forEach(this.migrate); d.v = 3;
       this.data = d;
     },
-    // v1 → v2：只新增欄位，不刪除任何既有紀錄
+    // 舊版 → 新版：只新增欄位，不刪除任何既有紀錄
     migrate(L) {
       L.gs = L.gs || { en: L.grade, ma: L.grade, zh: L.grade };
-      L.log = L.log || []; L.last = L.last || {}; L.bonus = L.bonus || { fix: 0, ev: 0, rev: 0 };
+      L.log = L.log || []; L.last = L.last || {}; L.bonus = L.bonus || { fix: 0, ev: 0, rev: 0 }; L.seen = L.seen || {}; L.theme = L.theme || (L.grade >= 4 ? 'explorer' : 'kid');
       for (const id in L.skills) {
         const t = L.skills[id];
         if (!t.rec) {
           const n = Math.min(10, t.r + t.w), k = Math.round(n * t.r / Math.max(1, t.r + t.w));
           t.rec = Array(n).fill(0).fill(1, 0, k); t.hint = []; t.dl = t.m ? [1] : []; t.ap = []; t.ms = []; t.conf = {};
         }
+        if (!t.dlD) t.dlD = t.dl.map(() => t.last || K.today());
       }
     },
     save() { try { localStorage.setItem(KEY, JSON.stringify(this.data)); } catch (e) { } },
-    newLearner(name, avatar, grade) {
+    newLearner(name, avatar, grade, gs) {
       const L = {
-        id: 'L' + Date.now(), name, avatar, grade, limit: 20, extra: {},
+        id: 'L' + Date.now(), name, avatar, grade, limit: 20, extra: {}, gs: gs || { en: grade, ma: grade, zh: grade },
         sub: { en: 1, ma: 1, zh: 1 }, recent: { en: [], ma: [], zh: [] }, hi: { en: 0, ma: 0, zh: 0 },
         skills: {}, stickers: [], days: {}, tests: [], best: {}, created: K.today()
       };
@@ -83,7 +101,7 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {} };
     cur() { return this.data.learners.find(l => l.id === this.data.current) || null; }
   };
 
-  // ---------- 音效與語音 ----------
+  // ---------- 音效、震動與語音 ----------
   const A = K.audio = {
     ac: null,
     tone(f, t0, d, type = 'sine', g = .15) {
@@ -94,7 +112,9 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {} };
       o.connect(ga).connect(ac.destination); o.start(ac.currentTime + t0); o.stop(ac.currentTime + t0 + d);
     },
     sfx(n) {
-      if (!K.store.data.settings.sfx) return;
+      const S = K.store.data.settings;
+      if (S.vib && navigator.vibrate && (n === 'ok' || n === 'bad' || n === 'win')) try { navigator.vibrate(n === 'bad' ? [30, 40, 30] : n === 'win' ? [20, 30, 20, 30, 60] : 20); } catch (e) { }
+      if (!S.sfx) return;
       try {
         A.ac = A.ac || new (window.AudioContext || window.webkitAudioContext)();
         if (A.ac.state === 'suspended') A.ac.resume();
@@ -104,42 +124,75 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {} };
           tap: () => A.tone(500, 0, .05, 'sine', .06),
           pop: () => A.tone(900, 0, .07, 'square', .06),
           win: () => [523, 659, 784, 1047].forEach((f, i) => A.tone(f, i * .12, .25)),
-          star: () => { A.tone(1200, 0, .1); A.tone(1600, .08, .15); }
+          star: () => { A.tone(1200, 0, .1); A.tone(1600, .08, .15); },
+          hit: () => { A.tone(150, 0, .3, 'sawtooth', .12); }
         })[n]();
       } catch (e) { }
     },
+    voices() { try { return speechSynthesis.getVoices(); } catch (e) { return []; } },
+    // 依設定挑語音：指定名稱 → 口音 + 性別 → 同語言任一
     voice(lang) {
-      const vs = speechSynthesis.getVoices(), p = lang.slice(0, 2);
-      return vs.find(v => v.lang.replace('_', '-') === lang)
-        || vs.find(v => v.lang.startsWith(p) && (p !== 'zh' || /TW|Hant/i.test(v.lang + v.name)))
-        || vs.find(v => v.lang.startsWith(p)) || null;
+      const S = K.store.data.settings, vs = A.voices(), p = lang.slice(0, 2);
+      if (p === 'zh') {
+        if (S.zhVoice) { const v = vs.find(v => v.name === S.zhVoice); if (v) return v; }
+        return vs.find(v => /zh[-_]TW/i.test(v.lang)) || vs.find(v => /zh/i.test(v.lang) && /TW|Hant|Taiwan|國語|台灣|臺灣/i.test(v.lang + v.name)) || vs.find(v => /zh/i.test(v.lang)) || null;
+      }
+      if (S.enVoice) { const v = vs.find(v => v.name === S.enVoice); if (v) return v; }
+      const acc = S.enAccent === 'UK' ? /en[-_]GB/i : /en[-_]US/i, en = vs.filter(v => /^en/i.test(v.lang));
+      const g = v => A.gender(v), want = S.enGender;
+      return en.find(v => acc.test(v.lang) && g(v) === want) || en.find(v => acc.test(v.lang) && g(v) !== (want === 'f' ? 'm' : 'f')) || en.find(v => acc.test(v.lang)) || en.find(v => g(v) === want) || en[0] || null;
     },
+    gender(v) {
+      const n = v.name;
+      if (/female|woman|girl|女/i.test(n)) return 'f'; if (/male|man|boy|男/i.test(n)) return 'm';
+      if (/Samantha|Karen|Moira|Tessa|Fiona|Victoria|Zira|Hazel|Susan|Ava|Allison|Serena|Kate|Emma|Jenny|Aria|Libby|Sonia|Olivia|Amy|Joanna|Salli|Kendra|Kimberly|Ivy|Nicole|Emily|Catherine|Linda|Heather|Zoe|Martha|Hollie|Maisie|Michelle|Ana|Sara|Natasha|Clara|Yating|Hsiao|Mei|Ting|Yun|Xiaoxiao|Hanhan|Shu/i.test(n)) return 'f';
+      if (/Daniel|Alex|Fred|Tom|David|Mark|George|Ryan|Guy|Oliver|Thomas|Brian|Matthew|Christopher|Eric|Jacob|Brandon|Roger|Steffan|Liam|James|Arthur|Aaron|Andrew|Justin|Kevin|Russell|William|Yunjhe|Zhiwei|Wayne|Junjie|Yunxi/i.test(n)) return 'm';
+      return '?';
+    },
+    ok(lang) { const S = K.store.data.settings; return !!(S.voice && 'speechSynthesis' in window && A.voice(lang)); },
     speak(text, lang = 'zh-TW', o = {}) {
       return new Promise(res => {
-        if (!K.store.data.settings.voice || !('speechSynthesis' in window) || !text) return res();
+        const S = K.store.data.settings;
+        if (!S.voice || !('speechSynthesis' in window) || !text) return res(false);
         try {
           if (!o.queue) speechSynthesis.cancel();
           const u = new SpeechSynthesisUtterance(text);
-          u.lang = lang; const v = A.voice(lang); if (v) u.voice = v;
-          u.rate = o.rate || (lang[0] === 'e' ? .8 : .9);
-          u.onend = u.onerror = () => res();
+          u.lang = lang; const v = A.voice(lang); if (v) { u.voice = v; u.lang = v.lang; }
+          u.rate = (o.rate || (lang[0] === 'e' ? .85 : .95)) * (S.rate || 1);
+          u.onend = () => res(true); u.onerror = () => res(false);
           speechSynthesis.speak(u);
-          setTimeout(res, Math.max(2500, text.length * 450));
-        } catch (e) { res(); }
+          setTimeout(() => res(true), Math.max(2500, text.length * 450) / (S.rate || 1));
+        } catch (e) { res(false); }
       });
     },
-    stop() { try { speechSynthesis.cancel(); } catch (e) { } }
+    playFile(url) {
+      return new Promise(res => {
+        try {
+          const S = K.store.data.settings; if (!S.voice) return res(false);
+          A.el = A.el || new Audio(); const el = A.el; el.src = url; el.playbackRate = Math.min(1.5, Math.max(.6, S.rate || 1));
+          el.onended = () => res(true); el.onerror = () => res(false);
+          el.play().catch(() => res(false)); setTimeout(() => res(true), 3000);
+        } catch (e) { res(false); }
+      });
+    },
+    stop() { try { speechSynthesis.cancel(); if (A.el) { A.el.pause(); } } catch (e) { } }
   };
-  K.sayQ = (q, o) => { if (q && q.say) return A.speak(q.say, q.lang || 'zh-TW', o); return Promise.resolve(); };
+  // 唸題目：低年級先唸指示再唸內容；注音用教育部音檔，失敗才用 TTS 代字
+  K.sayQ = async (q, o = {}) => {
+    if (!q) return;
+    const low = K.cur && K.cur.grade <= 2;
+    if (low && q.ask && !o.noAsk && !o.rate) { await A.speak(q.ask, 'zh-TW'); if (q.say || q.audio) await new Promise(r => setTimeout(r, 150)); }
+    if (q.audio) { const played = await A.playFile(q.audio); if (played) return; }
+    if (q.say) await A.speak(q.say, q.lang || 'zh-TW', Object.assign({ queue: low && q.ask && !o.noAsk }, o));
+  };
 
   // ---------- 學習引擎 ----------
   const GAP = [0, 1, 3, 7, 14, 30]; // Leitner 間隔（天）
   K.STAGES = [['🌱', '新手'], ['🌿', '熟悉'], ['🌳', '穩定'], ['⭐', '精熟']];
   const E = K.engine = {
     L: () => K.store.cur(),
-    st(sid) { const L = E.L(); return L.skills[sid] || (L.skills[sid] = { score: 0, box: 0, due: null, r: 0, w: 0, days: {}, games: {}, m: false, last: null, rec: [], hint: [], dl: [], ap: [], ms: [], conf: {} }); },
-    // 掌握度 0–100：近期正確率 45% + 隔日保留 20% + 情境應用 15% + 獨立完成 10% + 流暢度 10%
-    // 新技能（作答少於 6 次）不看速度，避免逼孩子求快
+    st(sid) { const L = E.L(); return L.skills[sid] || (L.skills[sid] = { score: 0, box: 0, due: null, r: 0, w: 0, days: {}, games: {}, m: false, last: null, rec: [], hint: [], dl: [], dlD: [], ap: [], ms: [], conf: {} }); },
+    // 掌握度 0–100：近期正確率 + 隔日保留 + 情境應用 + 獨立完成 + 流暢度；新技能不看速度
     mastery(t, s) {
       if (!t || !t.rec || !t.rec.length) return 0;
       const n = t.rec.length, acc = mean(t.rec);
@@ -148,30 +201,36 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {} };
       if (n < 6 || !t.ms.length) fw = 0; else { const base = (s && s.base) || 7000; fl = Math.max(0, Math.min(1, (2.5 * base - median(t.ms)) / (1.5 * base))); }
       return Math.round(100 * ((.55 - fw) * acc + .20 * dl + .15 * ap + .10 * ind + fw * fl) * Math.min(1, n / 6));
     },
-    // 0 新手 1 熟悉 2 穩定 3 精熟（精熟需要至少一次隔日仍答對）
-    stage(sid) { const t = E.L().skills[sid]; if (!t || !t.last) return 0; const m = t.score; let st = m >= 80 ? 3 : m >= 60 ? 2 : m >= 35 ? 1 : 0; if (st === 3 && !(t.dl && t.dl.some(x => x))) st = 2; return st; },
+    // 0 新手 1 熟悉 2 穩定 3 精熟（精熟：隔日答對兩次以上，且前後相隔至少 7 天）
+    stage(sid) {
+      const t = E.L().skills[sid]; if (!t || !t.last) return 0;
+      const m = t.score; let st = m >= 80 ? 3 : m >= 60 ? 2 : m >= 35 ? 1 : 0;
+      if (st === 3) { const ok = (t.dl || []).map((v, i) => v ? (t.dlD || [])[i] : null).filter(Boolean); if (!(ok.length >= 2 && K.daysBetween(ok[0], ok[ok.length - 1]) >= 7)) st = 2; }
+      return st;
+    },
     eligible(s, L) { const g = L.gs[s.subj]; return s.g < g || (s.g === g && s.sub <= L.sub[s.subj]); },
     unlocked(s, L) { return (s.prereq || []).every(p => { const ps = K.skill[p]; return !ps || ps.g < L.gs[ps.subj] || E.stage(p) >= 2; }); },
     candidates(game) {
       const L = E.L();
       const all = K.skills.filter(s => K.fits(game, s));
       let el = all.filter(s => E.eligible(s, L));
-      if (!el.length && all.length) { // 這款遊戲在此程度沒有內容 → 用最基礎的
-        const lv = Math.min(...all.map(s => s.g * 10 + s.sub));
-        el = all.filter(s => s.g * 10 + s.sub === lv);
-      }
-      const un = el.filter(s => E.unlocked(s, L));
-      return { all, list: un.length ? un : el };
+      if (!el.length && all.length) { const lv = Math.min(...all.map(s => s.g * 10 + s.sub)); el = all.filter(s => s.g * 10 + s.sub === lv); }
+      return { all, list: el };
     },
     weight(s, L, round) {
       const t = L.skills[s.id], today = K.today(), low = s.g < L.gs[s.subj];
-      if (!t || !t.last) return low ? .3 : 3;                    // 沒練過：低年級內容偶爾抽查
+      const lock = E.unlocked(s, L) ? 1 : .35;
+      if (!t || !t.last) return (low ? .3 : 3) * lock;
       if (t.due && t.due <= today) return round && round.answers.length < 3 ? 8 : 4; // 到期復習優先放在開頭
       if (t.m) return .4;
-      return low ? 1.5 : 3;
+      return (low ? 1.5 : 3) * lock;
     },
+    // 低年級題目總權重封頂 20%（到期複習不受限），避免淹沒本年級內容
     wpick(list, L, round) {
-      const ws = list.map(s => E.weight(s, L, round));
+      const today = K.today(), ws = list.map(s => E.weight(s, L, round));
+      const low = list.map(s => { const t = L.skills[s.id]; return s.g < L.gs[s.subj] && !(t && t.due && t.due <= today); });
+      let ls = 0, cs = 0; ws.forEach((w, i) => low[i] ? ls += w : cs += w);
+      if (cs > 0 && ls > cs / 4) { const k = (cs / 4) / ls; ws.forEach((w, i) => { if (low[i]) ws[i] = w * k; }); }
       let r = Math.random() * ws.reduce((a, b) => a + b, 0);
       for (let i = 0; i < list.length; i++) { r -= ws[i]; if (r <= 0) return list[i]; }
       return list[list.length - 1];
@@ -180,14 +239,10 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {} };
       const L = E.L();
       if (round.retry) { const s = round.retry; round.retry = null; return { skill: s }; }
       const { all, list } = E.candidates(game);
-      if (Math.random() < .08) { // 探測題：下一子級
-        const pr = all.filter(s => s.g === L.gs[s.subj] && s.sub === L.sub[s.subj] + 1);
-        if (pr.length) return { skill: K.pick(pr), probe: true };
-      }
+      if (Math.random() < .08) { const pr = all.filter(s => s.g === L.gs[s.subj] && s.sub === L.sub[s.subj] + 1); if (pr.length) return { skill: K.pick(pr), probe: true }; }
       return { skill: E.wpick(list, L, round) };
     },
-    // 回報一次作答。ok＝第一次、沒用提示就答對；info: {hint, fixed, want, got, ev}
-    // 回傳 true 表示該跳示範卡
+    // 回報一次作答。ok＝第一次、沒用提示就答對；info: {hint, fixed, want, got, ev, q}
     report(game, round, skill, ok, ms, probe, info) {
       info = info || {};
       const L = E.L(), t = E.st(skill.id), today = K.today(), day = E.day();
@@ -195,7 +250,7 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {} };
       ok ? t.r++ : t.w++;
       const d = t.days[today] || (t.days[today] = [0, 0]); d[ok ? 0 : 1]++;
       const ks = Object.keys(t.days).sort(); while (ks.length > 8) delete t.days[ks.shift()];
-      if (t.last && t.last < today && !probe) push(t.dl, ok ? 1 : 0, 4); // 隔日後的第一題 = 延遲保留
+      if (t.last && t.last < today && !probe) { push(t.dl, ok ? 1 : 0, 4); push(t.dlD = t.dlD || [], today, 4); } // 隔日後的第一題 = 延遲保留
       t.games[game.id] = 1; t.last = today;
       push(t.rec, ok ? 1 : 0, 10); push(t.hint, info.hint ? 1 : 0, 10);
       if (game.app) push(t.ap, ok ? 1 : 0, 6);
@@ -209,6 +264,7 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {} };
       }
       t.score = E.mastery(t, skill); t.m = E.stage(skill.id) === 3;
       round.answers.push({ sid: skill.id, ok, ms, probe: !!probe });
+      if (!ok) round.wrongs.push({ sid: skill.id, want: info.want || '', got: info.got || '', prompt: info.q ? K.strip(info.q.ask || '') + ' ' + K.strip(info.q.prompt || info.q.say || '') : '', why: (info.q && info.q.why) || skill.why || skill.demo || '' });
       if (info.fixed) { round.fixed++; L.bonus.fix++; }
       if (info.ev) { round.ev++; L.bonus.ev++; }
       push(L.log, [Date.now(), game.id, skill.id, ok ? 1 : 0, Math.round(ms / 100) / 10, info.hint ? 1 : 0], 2000);
@@ -221,24 +277,19 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {} };
       if (round.cw[skill.id] >= 2 || round.fast >= 2) { round.cw[skill.id] = 0; round.fast = 0; return true; } // 連錯或亂猜 → 示範卡
       return false;
     },
-    newRound() { return { answers: [], cw: {}, pre: {}, fixed: 0, ev: 0, start: Date.now(), retry: null }; },
+    newRound() { return { answers: [], wrongs: [], cw: {}, pre: {}, fixed: 0, ev: 0, start: Date.now(), retry: null, used: {} }; },
     endRound(game, round) {
-      const L = E.L(), today = K.today(), res = { n: 0, r: 0, skills: [], mastered: [], grew: [], up: null, down: null, gradeUp: false, sticker: null, fixed: round.fixed, ev: round.ev };
+      const L = E.L(), today = K.today(), res = { n: 0, r: 0, skills: [], mastered: [], grew: [], up: null, down: null, gradeUp: false, sticker: null, fixed: round.fixed, ev: round.ev, wrongs: round.wrongs };
       const by = {};
-      for (const a of round.answers) {
-        if (a.probe) continue;
-        const b = by[a.sid] || (by[a.sid] = { n: 0, r: 0 }); b.n++; if (a.ok) b.r++;
-        res.n++; if (a.ok) res.r++;
-      }
+      for (const a of round.answers) { if (a.probe) continue; const b = by[a.sid] || (by[a.sid] = { n: 0, r: 0 }); b.n++; if (a.ok) b.r++; res.n++; if (a.ok) res.r++; }
       for (const sid in by) {
         const s = K.skill[sid], t = E.st(sid), acc = by[sid].r / by[sid].n, st = E.stage(sid);
         res.skills.push(s.name);
         if (!t.box) { t.box = 1; t.due = K.addDays(today, 1); }
         else if (t.due <= today) { t.box = acc >= .8 ? Math.min(5, t.box + 1) : acc < .6 ? 1 : t.box; t.due = K.addDays(today, GAP[t.box]); }
-        else if (acc < .6) { t.box = 1; t.due = K.addDays(today, 1); } // 明顯遺忘：排入近期複習，不降級
+        else if (acc < .6) { t.box = 1; t.due = K.addDays(today, 1); }
         if (st > (round.pre[sid] || 0)) (st === 3 ? res.mastered : res.grew).push(st === 3 ? s.name : `${s.name} ${K.STAGES[st][0]}`);
       }
-      // 自適應：回合之間才升降；答對但很慢先不升級
       const subj = game.subj;
       if (subj) {
         const rc = L.recent[subj], okMs = round.answers.filter(a => a.ok && a.ms > 0).map(a => a.ms), slow = okMs.length && median(okMs) > 15000;
@@ -248,9 +299,8 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {} };
             if (L.sub[subj] < 3) { L.sub[subj]++; L.recent[subj] = []; res.up = L.sub[subj]; }
             else if (res.n && res.r / res.n > .9) {
               L.hi[subj]++;
-              // 年級只是起點：這個年級大多數技能都穩定了，就開放下一個年級
               const mine = K.skills.filter(s => s.subj === subj && s.g === L.gs[subj]);
-              if (L.hi[subj] >= 3 && L.gs[subj] < 6 && mine.filter(s => E.stage(s.id) >= 2).length >= mine.length * .7) { L.gs[subj]++; L.sub[subj] = 1; L.hi[subj] = 0; L.recent[subj] = []; res.gradeUp = true; }
+              if (L.hi[subj] >= 3 && L.gs[subj] < 6 && mine.filter(s => E.stage(s.id) >= 2).length >= mine.length * .6) { L.gs[subj]++; L.sub[subj] = 1; L.hi[subj] = 0; L.recent[subj] = []; res.gradeUp = true; }
             }
           } else if (acc < .6 && L.sub[subj] > 1) { L.sub[subj]--; L.recent[subj] = []; res.down = L.sub[subj]; L.hi[subj] = 0; }
         }
@@ -260,12 +310,8 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {} };
       if (game.subj) day.tasks[game.subj]++;
       if (game.id === 'review') { day.rev = 1; L.bonus.rev++; }
       L.last[game.id] = Date.now();
-      // 島嶼裝飾：亂點（很快又錯）過半就不給
       const fast = round.answers.filter(a => !a.ok && a.ms < 500).length;
-      if (res.n >= 3 && fast < res.n / 2) {
-        const pool = K.STICKERS.filter(s => !L.stickers.includes(s));
-        if (pool.length) { res.sticker = K.pick(pool); L.stickers.push(res.sticker); }
-      }
+      if (res.n >= 3 && fast < res.n / 2) { const pool = K.STICKERS.filter(s => !L.stickers.includes(s)); if (pool.length) { res.sticker = K.pick(pool); L.stickers.push(res.sticker); } }
       K.store.save();
       return res;
     },
@@ -275,14 +321,12 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {} };
       return d;
     },
     due() { const L = E.L(), today = K.today(); return K.skills.filter(s => { const t = L.skills[s.id]; return t && t.due && t.due <= today; }); },
-    // 推薦一款遊戲：先依引擎權重挑技能，再選最久沒玩、能練這個技能的遊戲
     suggest(subj) {
       const L = E.L(), all = K.skills.filter(s => s.subj === subj && K.gamesOf(s).length);
       let el = all.filter(s => E.eligible(s, L) && E.unlocked(s, L)); if (!el.length) el = all.filter(s => E.eligible(s, L)); if (!el.length) el = all;
       const gs = K.gamesOf(E.wpick(el, L, null));
       return gs.sort((a, b) => (L.last[a.id] || 0) - (L.last[b.id] || 0) || Math.random() - .5)[0].id;
     },
-    // 今日冒險路線：快複習 → 三科各一站 → 跨科魔王
     route() {
       const day = E.day(); if (day.route) return day.route;
       const r = [], order = ['zh', 'ma', 'en'], k = new Date().getDate() % 3;
@@ -296,24 +340,27 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {} };
     overLimit() { const L = E.L(), d = E.day(); return L.limit > 0 && d.sec >= (L.limit + (L.extra[K.today()] || 0)) * 60; }
   };
 
-  K.STICKERS = [...'🌴🌳🌵🌺🌻🍄🏠⛺🏰🎡🎠⛲🗿🌋🚤⛱️🦜🐚🦩🐠🦁🐯🐻🐼🐨🐵🐶🐱🐰🦊🐸🐷🐮🐔🐧🦉🦄🐝🦋🐢🐬🐳🐙🦀🦖🌈⭐🌙☀️🌸🍎🍓🍉🍩🍦🧁🚀🚗🚂⛵🎈🎁🏆🎨🎸⚽🏀'.matchAll(/\p{Extended_Pictographic}️?/gu)].map(m => m[0]);
+  // 島嶼裝飾：四個系列，各自集滿有成就感
+  K.STICKER_SETS = [['🏝️ 小島建設', '🌴🌳🌵🌺🌻🍄🏠⛺🏰🎡🎠⛲🗿🌋🚤⛱️'], ['🐾 島上動物', '🦜🐚🦩🐠🦁🐯🐻🐼🐨🐵🐶🐱🐰🦊🐸🐷🐮🐔🐧🦉🦄🐝🦋🐢🐬🐳🐙🦀🦖'], ['🌈 天空與點心', '🌈⭐🌙☀️🌸🍎🍓🍉🍩🍦🧁'], ['🎉 冒險道具', '🚀🚗🚂⛵🎈🎁🏆🎨🎸⚽🏀']];
+  K.STICKERS = K.STICKER_SETS.flatMap(s => [...s[1].matchAll(/\p{Extended_Pictographic}️?/gu)].map(m => m[0]));
   K.PETS = [[0, '🥚', '神祕的蛋'], [3, '🐣', '破殼寶寶'], [8, '🐥', '小小雞'], [16, '🦕', '小恐龍'], [30, '🐉', '學習神龍']];
   K.pet = () => { const n = E.masteredCount(); let p = K.PETS[0]; for (const x of K.PETS) if (n >= x[0]) p = x; return { e: p[1], name: p[2], n, next: (K.PETS[K.PETS.indexOf(p) + 1] || [null])[0] }; };
 
   // ---------- 共用 UI 元件 ----------
-  const h = K.h, strip = s => String(s).replace(/<[^>]+>/g, '').trim();
-  // 題目列：指示文字 + 題目 + 重聽 + 求助
+  const h = K.h, strip = K.strip;
+  // 題目列：指示文字 + 題目（無語音時顯示文字備援）+ 重聽 + 求助
   K.ui.prompt = q => {
     const box = h('div', 'q-box');
     if (q.ask) box.append(h('div', 'q-ask', { text: q.ask }));
     const row = h('div', 'q-row');
+    const voiceOK = q.audio || A.ok(q.lang || 'zh-TW');
     if (q.prompt && q.prompt !== '🔊') row.append(h('div', 'q-main', { html: q.prompt }));
-    if (q.say) row.append(h('button', 'q-snd', { text: '🔊', 'aria-label': '再聽一次', onclick: () => K.sayQ(q) }));
+    else if (!voiceOK) row.append(h('div', 'q-main nov', { html: q.novoice || `<span class="zhs">${strip(q.say)}</span>` }));
+    if (q.say || q.audio) row.append(h('button', 'q-snd' + (voiceOK ? '' : ' off'), { text: '🔊', 'aria-label': '再聽一次', onclick: () => K.sayQ(q, { noAsk: true }) }));
     if (q.opts && q.opts.length > 2) row.append(h('button', 'q-help', { text: '💡', 'aria-label': '給我提示', onclick: () => q._help && q._help() }));
     box.append(row);
     return box;
   };
-  // 提示列（錯誤即教學）：不遮住題目，下一題自動消失
   K.ui.hint = (html, speak) => {
     const r = document.querySelector('.groot'); if (!r) return;
     let e = r.querySelector('.hint-toast');
@@ -322,17 +369,17 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {} };
     e.innerHTML = '💡 ' + html;
     if (speak) A.speak(strip(html));
   };
-  // 多選一的共用流程：第一次答錯 → 給提示再試一次；第二次錯才公布答案
-  // els 依選項順序排列；回傳 {ok（第一次且沒提示就對）, fixed（提示後改對）, hint, ms, want, got}
+  // 多選一的共用流程：第一次答錯 → 給提示再試一次；第二次錯才公布答案並說明
   K.ui.multi = (q, els, o = {}) => new Promise(res => {
     const t0 = Date.now(), two = q.opts.length > 2 && !o.single; let tries = 0, got = null, done = false, helped = false;
     const hintText = () => q.hint || (q.skill && q.skill.demo) || '再仔細看一次，慢慢想。';
-    const showHint = () => { if (o.onHint) o.onHint(); K.ui.hint(hintText(), !q.say); if (q.say) setTimeout(() => K.sayQ(q, { rate: .6 }), 300); };
+    const showHint = () => { if (o.onHint) o.onHint(); K.ui.hint(hintText(), !q.say && !q.audio); if (q.say || q.audio) setTimeout(() => K.sayQ(q, { rate: .6, noAsk: true }), 300); };
     const finish = ok => {
       done = true; q._help = null; if (o.lock) o.lock();
-      setTimeout(() => { K.ui.hint(null); res({ ok: ok && !tries && !helped, fixed: ok && (tries > 0 || helped), hint: tries > 0 || helped, ms: Date.now() - t0, want: strip(q.opts[q.ans]), got: got == null ? '' : strip(q.opts[got]) }); }, ok ? (o.okWait || 800) : (o.badWait || 1800));
+      if (!ok && !o.single) { const why = q.why || ''; K.ui.hint(`正確答案是「${strip(q.opts[q.ans])}」。${why}`, true); }
+      setTimeout(() => { K.ui.hint(null); res({ ok: ok && !tries && !helped, fixed: ok && (tries > 0 || helped), hint: tries > 0 || helped, ms: Date.now() - t0, want: strip(q.opts[q.ans]), got: got == null ? '' : strip(q.opts[got]), q }); }, ok ? (o.okWait || 800) : (o.badWait || (q.why ? 2600 : 1900)));
     };
-    q._help = () => { // 主動求助：給提示並刪去一個錯的選項
+    q._help = () => {
       if (done || helped || o.single) return; helped = true; showHint();
       const w = els.map((e, i) => i).filter(i => i !== q.ans && !els[i].dataset.x);
       if (w.length > 1) { const i = K.pick(w); els[i].dataset.x = 1; els[i].classList.add(o.wrong || 'wrong'); }
@@ -347,35 +394,38 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {} };
     }));
   });
   K.ui.choice = (root, q, o = {}) => {
-    const wrap = h('div', 'choices ' + (o.cls || '')), els = q.opts.map(op => h('button', 'opt', { html: op }));
+    const wrap = h('div', 'choices ' + (o.cls || '')), els = q.opts.map(op => { const L = strip(op).length, b = h('button', 'opt' + (L > 18 ? ' xl' : L > 9 ? ' long' : ''), { html: op }); return b; });
     wrap.append(...els); root.append(wrap);
     return K.ui.multi(q, els, Object.assign({ lock: () => wrap.dataset.done = 1 }, o));
   };
-  // 數字鍵盤輸入
+  // 數字鍵盤輸入（支援小數點與分數）
   K.ui.keypad = (root, q) => new Promise(res => {
-    const t0 = Date.now(), ans = String(q.item.ans); let v = '';
+    const raw = q.item.ans, m = typeof raw === 'string' && raw.match(/data-v="([^"]+)"/), ans = m ? m[1] : String(raw), t0 = Date.now(); let v = '';
     const disp = h('div', 'kp-disp', { text: '？' }), pad = h('div', 'kp');
+    const keys = [...'123456789'].concat([ans.includes('.') ? '.' : ans.includes('/') ? '/' : '⌫', '0', '✔']);
+    if (keys[9] !== '⌫') keys.splice(9, 0, '⌫');
     const upd = () => disp.textContent = v || '？';
-    [...'123456789'].concat(['⌫', '0', '✔']).forEach(k => pad.append(h('button', 'kp-k' + (k === '✔' ? ' go' : ''), {
+    keys.forEach(k => pad.append(h('button', 'kp-k' + (k === '✔' ? ' go' : ''), {
       text: k, onclick: () => {
         if (pad.dataset.done) return;
         if (k === '⌫') v = v.slice(0, -1);
         else if (k === '✔') {
           if (!v) return; pad.dataset.done = 1;
-          const ok = v === ans; A.sfx(ok ? 'ok' : 'bad');
-          disp.classList.add(ok ? 'right' : 'wrong'); if (!ok) disp.textContent = v + ' ✗　答案 ' + ans;
-          return setTimeout(() => res({ ok, ms: Date.now() - t0, want: ans, got: ok ? '' : v }), ok ? 700 : 1800);
-        } else if (v.length < 6) v += k;
+          const ok = v === ans || (+v === +ans && !ans.includes('/')); A.sfx(ok ? 'ok' : 'bad');
+          disp.classList.add(ok ? 'right' : 'wrong'); if (!ok) { disp.textContent = v + ' ✗　答案 ' + ans; K.ui.hint(q.hint || (q.skill && q.skill.demo) || '', true); }
+          return setTimeout(() => { K.ui.hint(null); res({ ok, ms: Date.now() - t0, want: ans, got: ok ? '' : v, q }); }, ok ? 700 : 2600);
+        } else if (v.length < 7) v += k;
         A.sfx('tap'); upd();
       }
     })));
     root.append(h('div', 'kp-wrap', null, disp, pad));
   });
-  // 翻牌配對（英文翻翻樂、字詞配對森林共用）。items: [{k, a, b, say, lang}]
+  // 翻牌配對。items: [{k, a, b, say, sayB, lang}]
   K.ui.memory = (grid, ctx, p, items, onPair) => new Promise(res => {
     const cards = K.shuffle(items.flatMap(it => [{ it, html: it.a, say: it.say }, { it, html: it.b, say: it.sayB === undefined ? it.say : it.sayB }]));
-    const land = grid.parentNode.clientWidth > grid.parentNode.clientHeight, n = cards.length;
-    grid.style.setProperty('--c', land ? (n > 12 ? 8 : n > 8 ? 6 : 4) : (n > 12 ? 4 : n > 8 ? 3 : 2));
+    const W = grid.parentNode.clientWidth, H = grid.parentNode.clientHeight - 80, n = cards.length;
+    let cols = 4; for (const c of [8, 6, 5, 4, 3]) { const rows = Math.ceil(n / c), size = Math.min((W - 10 * c) / c, (H - 10 * rows) / rows / 1.05); if (size >= 70 || c === 3) { cols = c; if (size >= 70) break; } }
+    grid.style.setProperty('--c', cols);
     grid.replaceChildren();
     let open = [], lock = false, left = items.length; const seen = new Set(), miss = {};
     cards.forEach(c => {
@@ -391,7 +441,7 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {} };
           lock = false; if (!--left) res();
         } else {
           const partner = cards.find(o => o.it === x.it && o !== x);
-          if (seen.has(partner)) miss[x.it.k] = (miss[x.it.k] || 0) + 1; // 看過卻沒配成 → 還沒記住
+          if (seen.has(partner)) miss[x.it.k] = (miss[x.it.k] || 0) + 1;
           seen.add(x); seen.add(y);
           await ctx.wait(1000); x.el.classList.remove('on'); y.el.classList.remove('on'); lock = false;
         }

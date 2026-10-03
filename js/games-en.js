@@ -5,7 +5,7 @@
   const enw = (w, c = '') => `<span class="enw ${c}">${w}</span>`;
 
   K.games.e1 = {
-    id: 'e1', subj: 'en', name: '字母音氣球', icon: '🎈', cog: '辨識', kinds: ['letter', 'lsound', 'vocab', 'phon'], n: 8,
+    id: 'e1', subj: 'en', name: '字母音氣球', icon: '🎈', cog: '辨識', kinds: ['letter', 'lsound', 'vocab', 'phon', 'sight'], n: 8,
     desc: '聽聲音，點破正確的氣球！',
     async start(root, ctx) {
       const top = h('div', 'g-top'), sky = h('div', 'e1-sky'), combo = h('div', 'combo');
@@ -25,7 +25,7 @@
   };
 
   K.games.e2 = {
-    id: 'e2', subj: 'en', name: '單字翻翻樂', icon: '🃏', cog: '回憶', kinds: ['vocab', 'letter'], n: 8,
+    id: 'e2', subj: 'en', name: '單字翻翻樂', icon: '🃏', cog: '回憶', kinds: ['vocab', 'letter', 'sight'], n: 8,
     desc: '翻開卡片，找出一對的好朋友！',
     async start(root, ctx) {
       const pairsN = ctx.grade <= 2 ? 4 : ctx.grade <= 4 ? 6 : 8, boards = ctx.grade <= 2 ? 2 : 1, total = pairsN * boards; let done = 0;
@@ -45,7 +45,7 @@
   };
 
   K.games.e3 = {
-    id: 'e3', subj: 'en', name: '拼字工廠', icon: '🏭', cog: '產出', kinds: ['phon', 'vocab'], n: 6,
+    id: 'e3', subj: 'en', name: '拼字工廠', icon: '🏭', cog: '產出', kinds: ['phon', 'vocab', 'sight'], n: 6,
     desc: '聽單字，把字母一個一個拼出來！',
     async start(root, ctx) {
       const g = ctx.grade, maxLen = [4, 4, 5, 6, 7, 8, 10][g], nd = [0, 0, 2, 3, 3, 4, 4][g];
@@ -96,10 +96,10 @@
       const top = h('div', 'g-top'), ans = h('div', 'e4-ans'), bank = h('div', 'tiles'), go = h('button', 'btn pri go', { text: '✔ 排好了' });
       root.append(top, ans, bank, go);
       for (let i = 0; i < ctx.total && ctx.alive; i++) {
-        const p = ctx.pick(), it = K.pick(p.skill.data), words = it.s.split(' '), t0 = Date.now(); let tries = 0;
+        const p = ctx.pick(), it = K.pi(p.skill), words = it.s.split(' '), t0 = Date.now(); let tries = 0;
         const sayIt = () => A.speak(it.s, 'en-US');
         const pool = words.slice();
-        if (ctx.grade >= 5) { const o = K.pick(p.skill.data.filter(x => x !== it)).s.split(' ').filter(w => !words.includes(w)); if (o.length) pool.push(K.pick(o)); }
+        if (ctx.grade >= 5) { const src = p.skill.data.length > 1 ? K.pick(p.skill.data.filter(x => x !== it)) : p.skill.gen(); const o = src.s.split(' ').filter(w => !words.includes(w)); if (o.length) pool.push(K.pick(o)); }
         top.replaceChildren(h('div', 'q-box', null, h('div', 'q-ask', { text: '排出這句話：' }), h('div', 'q-row', null, h('div', 'q-main', { html: `<span class="zhs">${it.zh}</span>` }), h('button', 'q-snd', { text: '🔊', onclick: sayIt }))));
         if (ctx.grade <= 4) sayIt();
         ans.replaceChildren(); ans.className = 'e4-ans'; go.style.visibility = 'hidden';
@@ -123,14 +123,14 @@
         });
         go.style.visibility = 'hidden'; ans.classList.add(ok ? 'right' : 'shown'); if (ok) A.sfx('ok'); sayIt();
         await ctx.wait(ok ? 1500 : 2600);
-        await ctx.report(p, ok, Date.now() - t0);
+        await ctx.report(p, ok, Date.now() - t0, { hint: tries > 0, fixed: !ok && tries === 1 });
       }
       ctx.done();
     }
   };
 
   K.games.e5 = {
-    id: 'e5', subj: 'en', app: true, name: '聽力冒險跑酷', icon: '🏃', cog: '理解', kinds: ['vocab', 'prep', 'sentence', 'cloze', 'read'], n: 8,
+    id: 'e5', subj: 'en', app: true, name: '聽力冒險跑酷', icon: '🏃', cog: '理解', kinds: ['vocab', 'prep', 'sentence', 'cloze', 'read', 'cmd', 'sight'], n: 8,
     desc: '聽指令，選對的門才能繼續跑！',
     async start(root, ctx) {
       const top = h('div', 'g-top'), stage = h('div', 'e5-stage'), doors = h('div', 'e5-doors'), runner = h('div', 'e5-runner', { text: '🏃' });

@@ -5,7 +5,7 @@
   const shake = el => { el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); };
 
   K.games.m1 = {
-    id: 'm1', subj: 'ma', name: '數感釣魚', icon: '🎣', cog: '數感', kinds: ['count', 'compare', 'arith', 'numline', 'equiv'], n: 8,
+    id: 'm1', subj: 'ma', name: '數感釣魚', icon: '🎣', cog: '數感', kinds: ['count', 'compare', 'arith', 'numline', 'equiv', 'clock'], n: 8,
     desc: '看題目，釣起正確的魚！',
     async start(root, ctx) {
       const top = h('div', 'g-top'), pond = h('div', 'm1-pond');
@@ -79,7 +79,9 @@
       for (let i = 0; i < ctx.total && ctx.alive; i++) {
         const p = ctx.pick(), q = K.mcq(p.skill, { n: ctx.nOpts });
         panel.replaceChildren(h('div', 'm2-q', { html: q.prompt }));
-        const useKey = ctx.grade >= 2 && ctx.L.sub.ma >= 3 && typeof q.item.ans === 'number' && Number.isInteger(q.item.ans) && !q.item.opts;
+        const stg = K.engine.stage(p.skill.id), tt = ctx.L.skills[p.skill.id];
+        // 小二起預設用鍵盤作答；新技能前三題先用選項當鷹架
+        const useKey = ctx.grade >= 2 && !q.item.opts && q.item.ans !== undefined && (typeof q.item.ans === 'number' || /data-v/.test(q.item.ans)) && !(stg === 0 && (!tt || tt.r < 3));
         const fluent = K.engine.stage(p.skill.id) >= 1; // 新技能不比速度，熟悉之後才有加速挑戰
         const r = await (useKey ? K.ui.keypad(panel, q) : K.ui.choice(panel, q));
         speed = r.ok || r.fixed ? Math.min(3, speed + (fluent && r.ms < 4000 ? .45 : .25)) : fluent ? Math.max(.6, speed - .4) : speed; setSpeed();
@@ -193,7 +195,7 @@
   };
 
   K.games.m5 = {
-    id: 'm5', subj: 'ma', app: true, name: '數字偵探', icon: '🕵️', cog: '推理', kinds: ['pattern', 'seq', 'balance', 'sudoku', 'chart'], n: 6,
+    id: 'm5', subj: 'ma', app: true, name: '數字偵探', icon: '🕵️', cog: '推理', kinds: ['pattern', 'seq', 'balance', 'sudoku', 'chart', 'line', 'clock'], n: 6,
     desc: '找出規律、解開謎題，你是小偵探！',
     async start(root, ctx) {
       const top = h('div', 'g-top'), work = h('div', 'm5-work');

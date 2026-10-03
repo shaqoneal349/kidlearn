@@ -10,7 +10,7 @@
     const pass = h('div', 'rd-pass' + (en ? ' en' : '')), top = h('div', 'g-top'), work = h('div', 'quiz-work');
     root.append(pass, top, work);
     for (let i = 0; i < ctx.total && ctx.alive; i++) {
-      const p = ctx.pick(), it = K.pick(p.skill.data), sents = K.sentences(it.t, en), ev = (it.ev || []).filter(x => x < sents.length);
+      const p = ctx.pick(), it = K.pi(p.skill), sents = K.sentences(it.t, en), ev = (it.ev || []).filter(x => x < sents.length);
       const els = sents.map(s => h('button', 'rd-s', { text: s + (en ? ' ' : '') }));
       const readIt = () => A.speak(it.t, lang);
       pass.replaceChildren(h('button', 'q-snd sm', { text: '🔊', onclick: readIt }), ...els); pass.dataset.step = 1;
@@ -100,6 +100,21 @@
           eq = m === 'groups' ? `${per} × ${g} = ${total}` : `${total} ÷ ${g} = ${per}`;
           body = [pileEl, h('div', 'kt-plates', null, plates), h('button', 'btn', { text: '↩️ 重來', onclick: () => { if (work.dataset.lock) return; plates.forEach(el => { el._n = 0; el._draw(); }); pile = m === 'share' ? total : Infinity; drawPile(); } }), h('div', 'sub', { text: '點盤子，放一個上去' })];
           check = () => { const bad = plates.filter(el => el._n !== per).length; return !bad && (m !== 'share' || pile === 0) ? '' : m === 'share' && pile > 0 ? `還有 ${pile} 個沒分完` : `每一盤要一樣多：${per} 個`; };
+        } else if (m === 'frac2') { // 同分母分數加法：兩個披薩合在第三個
+          const d = K.pick([4, 5, 6, 8]), a = R(1, d - 2), b = R(1, d - 1 - a), on = new Set();
+          tx = `${a}/${d} 個披薩加 ${b}/${d} 個披薩，一共是幾分之幾？請在右邊的披薩選出來`; eq = `${a}/${d} + ${b}/${d} = ${a + b}/${d}`;
+          const fig = h('div', 'kt-pz3', { html: K.pizza(d, i => i < a) + '<b>＋</b>' + K.pizza(d, i => i < b) + '<b>＝</b>' + K.pizza(d) });
+          const last = fig.querySelectorAll('.pizza')[2];
+          last.querySelectorAll('.wd').forEach(w => w.addEventListener('click', () => { if (work.dataset.lock) return; const x = +w.dataset.i; on.has(x) ? on.delete(x) : on.add(x); w.classList.toggle('on'); A.sfx('tap'); }));
+          body = [fig, h('div', 'sub', { text: '點右邊的披薩，選出合起來的份數' })];
+          check = () => on.size === a + b ? '' : on.size < a + b ? `還差 ${a + b - on.size} 片` : `多了 ${on.size - a - b} 片`;
+        } else if (m === 'tiles') { // 面積公式：鋪出長 × 寬 的長方形
+          const l = R(3, 6), w = R(2, 4), on = new Set(), COLS = 6, ROWS = 4;
+          tx = `用方塊鋪出一個長 ${l} 格、寬 ${w} 格的長方形`; eq = `${l} × ${w} = ${l * w}（面積 ${l * w} 格）`;
+          const grid = h('div', 'm4-grid', { style: `--c:${COLS};--r:${ROWS}` });
+          for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) { const k = r * COLS + c, cell = h('button', 'cell'); cell.onclick = () => { if (work.dataset.lock) return; A.sfx('tap'); on.has(k) ? on.delete(k) : on.add(k); cell.classList.toggle('on'); }; grid.append(cell); }
+          body = [grid, h('div', 'sub', { text: '點格子鋪方塊' })];
+          check = () => { if (!on.size) return '還沒鋪方塊'; const rs = [...on].map(k => Math.floor(k / COLS)), cs = [...on].map(k => k % COLS), W = Math.max(...cs) - Math.min(...cs) + 1, H = Math.max(...rs) - Math.min(...rs) + 1; if (W * H !== on.size) return '中間有空洞，不是長方形'; return (W === l && H === w) || (W === w && H === l) ? '' : `你鋪的是 ${W} × ${H}，要 ${l} × ${w}`; };
         } else { // frac / pct：披薩或量杯
           const pct = m === 'pct', d = pct ? 10 : K.pick([2, 3, 4, 6, 8]), k = R(1, d - 1), on = new Set();
           tx = pct ? `把果汁倒到 ${k * 10}%（每一格是 10%）` : `客人要 ${k}/${d} 個披薩（${d} 份裡的 ${k} 份）`; eq = pct ? `${k * 10}% = ${k}/10` : `${d} 份裡的 ${k} 份 = ${k}/${d}`;
@@ -154,27 +169,26 @@
       for (let i = 0; i < ctx.total && ctx.alive; i++) {
         const p = ctx.pick(), t0 = Date.now();
         const show = on => { ans.style.display = bank.style.display = on ? '' : 'none'; go.style.visibility = 'hidden'; work.replaceChildren(); };
-        if (p.skill.kind !== 'zsent') { // 標點
+        if (p.skill.kind !== 'zsent') {
           show(false); const q = K.mcq(p.skill, { n: 3 }); top.replaceChildren(K.ui.prompt(q)); K.sayQ(q);
           const r = await K.ui.choice(work, q); if (!ctx.alive) return;
           await ctx.report(p, r.ok, r.ms, r); continue;
         }
         show(true);
-        const it = K.pick(p.skill.data), right = it.join(''); let tries = 0;
+        const it = K.pi(p.skill), parts = it.parts, right = it.ok[0]; let tries = 0;
         top.replaceChildren(K.ui.prompt({ ask: '把詞語排成通順的句子', say: ctx.grade <= 2 ? right : '' })); if (ctx.grade <= 2) A.speak('把詞語排成通順的句子。' + right, 'zh-TW');
         ans.replaceChildren(); ans.className = 'e4-ans'; delete ans.dataset.lock;
-        const upd = () => go.style.visibility = ans.children.length >= it.length ? 'visible' : 'hidden';
-        bank.replaceChildren(...K.shuffle(it).map(w => { const b = h('button', 'tile word zh', { text: w }); b.onclick = () => { if (ans.dataset.lock) return; A.sfx('tap'); (b.parentNode === bank ? ans : bank).append(b); upd(); }; return b; }));
+        const upd = () => go.style.visibility = ans.children.length >= parts.length ? 'visible' : 'hidden';
+        bank.replaceChildren(...K.shuffle(parts).map(w => { const b = h('button', 'tile word zh', { text: w }); b.onclick = () => { if (ans.dataset.lock) return; A.sfx('tap'); (b.parentNode === bank ? ans : bank).append(b); upd(); }; return b; }));
         const ok = await new Promise(res => go.onclick = () => {
           if (ans.dataset.lock) return;
-          if ([...ans.children].map(b => b.textContent).join('') === right) { ans.dataset.lock = 1; return res(tries === 0); }
+          const cur = [...ans.children].map(b => b.textContent).join('');
+          if (it.ok.includes(cur)) { ans.dataset.lock = 1; return res(tries === 0); } // 接受白名單裡的任何一種通順語序
           tries++; A.sfx('bad'); shake(ans);
-          if (tries === 1) { // 提示：先告訴孩子開頭是哪一塊，並念出修改前的樣子
-            K.ui.hint(`念念看順不順？句子的開頭是「${it[0]}」`, true);
-            [...ans.children, ...bank.children].forEach(b => b.classList.toggle('hint', b.textContent === it[0]));
-          } else { ans.dataset.lock = 1; ans.replaceChildren(...it.map(w => h('span', 'tile word zh show', { text: w }))); res(false); }
+          if (tries === 1) { K.ui.hint(`念念看順不順？句子的開頭是「${parts[0]}」`, true); [...ans.children, ...bank.children].forEach(b => b.classList.toggle('hint', b.textContent === parts[0])); }
+          else { ans.dataset.lock = 1; ans.replaceChildren(...parts.map(w => h('span', 'tile word zh show', { text: w }))); res(false); }
         });
-        K.ui.hint(null); go.style.visibility = 'hidden'; ans.classList.add(ok ? 'right' : 'shown'); A.sfx(ok || tries === 1 ? 'ok' : 'tap'); A.speak(right);
+        K.ui.hint(null); go.style.visibility = 'hidden'; ans.classList.add(ok ? 'right' : 'shown'); A.sfx(ok || tries === 1 ? 'ok' : 'tap'); A.speak([...ans.children].map(b => b.textContent).join('') || right);
         await ctx.wait(ok ? 1600 : 2600);
         await ctx.report(p, ok, Date.now() - t0, { hint: tries > 0, fixed: !ok && tries === 1 });
       }

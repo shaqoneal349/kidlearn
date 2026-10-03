@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>小小學習家</title>
 <meta name="description" content="小學生英文、數學、國語學習遊戲">
 <meta name="theme-color" content="#2563eb">
@@ -19,9 +19,12 @@
 <div id="app"></div>
 <div id="overlay"></div>
 <script src="js/core.js"></script>
+<script src="js/data-en.js"></script>
+<script src="js/data-zh-chars.js"></script>
 <script src="js/content-en.js"></script>
 <script src="js/content-ma.js"></script>
 <script src="js/content-zh.js"></script>
+<script src="js/content-zh2.js"></script>
 <script src="js/content-plus.js"></script>
 <script src="vendor/hanzi-writer.min.js"></script>
 <script src="vendor/hanzi-data.js"></script>
@@ -30,6 +33,6 @@
 <script src="js/games-zh.js"></script>
 <script src="js/games-plus.js"></script>
 <script src="js/shell.js"></script>
-<script>if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js');</script>
+<script>if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').then(r => KL.swReady && KL.swReady(r)).catch(() => {});</script>
 </body>
 </html>

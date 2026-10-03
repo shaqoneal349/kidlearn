@@ -1,12 +1,9 @@
-// 離線快取。更新任何檔案後，CACHE 版號要 +1，使用者才會拿到新版。
-const CACHE = 'kidlearn-v2';
-const FILES = ['./', 'index.html', 'manifest.webmanifest', 'css/app.css',
-  'js/core.js', 'js/content-en.js', 'js/content-ma.js', 'js/content-zh.js', 'js/content-plus.js',
-  'js/games-en.js', 'js/games-ma.js', 'js/games-zh.js', 'js/games-plus.js', 'js/shell.js',
-  'vendor/hanzi-writer.min.js', 'vendor/hanzi-data.js',
-  'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png'];
-self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting())));
+// 由 tools/build.js 產生：版本 = 所有檔案內容的雜湊，任何檔案改動都會換新快取
+const CACHE = 'kidlearn-f58bfea1cc';
+const FILES = ["./","css/app.css","icons/icon-180.png","icons/icon-192.png","icons/icon-512.png","icons/icon-maskable-512.png","index.html","js/content-en.js","js/content-ma.js","js/content-plus.js","js/content-zh.js","js/content-zh2.js","js/core.js","js/data-en.js","js/data-zh-chars.js","js/games-en.js","js/games-ma.js","js/games-plus.js","js/games-zh.js","js/shell.js","manifest.webmanifest","vendor/bpmf/F1.wav","vendor/bpmf/F10.wav","vendor/bpmf/F11.wav","vendor/bpmf/F12.wav","vendor/bpmf/F13.wav","vendor/bpmf/F14.wav","vendor/bpmf/F15.wav","vendor/bpmf/F16.wav","vendor/bpmf/F17.wav","vendor/bpmf/F18.wav","vendor/bpmf/F19.wav","vendor/bpmf/F2.wav","vendor/bpmf/F20.wav","vendor/bpmf/F21.wav","vendor/bpmf/F22.wav","vendor/bpmf/F23.wav","vendor/bpmf/F24.wav","vendor/bpmf/F25.wav","vendor/bpmf/F26.wav","vendor/bpmf/F27.wav","vendor/bpmf/F28.wav","vendor/bpmf/F29.wav","vendor/bpmf/F3.wav","vendor/bpmf/F30.wav","vendor/bpmf/F31.wav","vendor/bpmf/F32.wav","vendor/bpmf/F33.wav","vendor/bpmf/F34.wav","vendor/bpmf/F35.wav","vendor/bpmf/F36.wav","vendor/bpmf/F37.wav","vendor/bpmf/F4.wav","vendor/bpmf/F5.wav","vendor/bpmf/F6.wav","vendor/bpmf/F7.wav","vendor/bpmf/F8.wav","vendor/bpmf/F9.wav","vendor/bpmf/LICENSE_MOE.txt","vendor/fonts/andika.LICENSE","vendor/fonts/andika.woff2","vendor/fonts/kai.woff2","vendor/fonts/wenkai.LICENSE","vendor/hanzi-data.js","vendor/hanzi-writer.LICENSE","vendor/hanzi-writer.min.js"];
+self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))));
 self.addEventListener('activate', e => e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())));
+self.addEventListener('message', e => { if (e.data === 'SKIP_WAITING') self.skipWaiting(); });
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   e.respondWith(caches.match(e.request, { ignoreSearch: true }).then(r => r || fetch(e.request)));

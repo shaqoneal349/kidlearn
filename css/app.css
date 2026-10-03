@@ -348,3 +348,53 @@ u{text-decoration-color:var(--zh);text-underline-offset:6px}
 .zy.sm{font-size:.62em;letter-spacing:0}.zhc.xs{font-size:.6em}.zhs.xs{font-size:.4em;font-weight:600}
 .tile.zh{font-size:clamp(22px,4vw,30px)}
 @media (max-width:600px){.hm-wk{display:none}.isle{height:120px}.stop{min-width:74px}.kt-plate{width:104px;min-height:92px}.hint-toast{font-size:17px}.tk-npc{font-size:60px}}
+
+/* ===== v3 改善：版面、無語音備援、三顆心、提示、字型、主題、無障礙 ===== */
+@font-face{font-family:"KidKai";src:url("../vendor/fonts/kai.woff2") format("woff2");font-display:swap}
+@font-face{font-family:"Andika";src:url("../vendor/fonts/andika.woff2") format("woff2");font-display:swap}
+.zhc{font-family:"KidKai","BiauKai","DFKai-SB","標楷體","KaiTi",serif}
+.enw,.passage,.rq,.e3-slots .slot,.rd-pass.en{font-family:"Andika","Comic Sans MS","Chalkboard SE","Comic Neue",sans-serif}
+.g-top,.rd-pass,.e4-ans,.gbar{flex-shrink:0}
+.opt{overflow-wrap:anywhere;line-height:1.25}
+.opt.long{font-size:clamp(18px,3.2vw,28px)}.opt.xl{font-size:clamp(15px,2.6vw,20px);font-weight:700}
+.opt .zhc{white-space:nowrap}
+.q-main.nov{font-size:clamp(24px,5vw,40px);background:#fef9c3;border-radius:14px;padding:6px 14px}
+.q-snd.off{opacity:.35}
+.rd-pass{max-height:42vh;overflow:auto}
+@media (orientation:landscape) and (max-height:520px){.rd-pass{max-height:34vh}.groot{gap:6px}}
+.mcard{max-height:min(24vh,170px)}
+.sw b{font-size:.6em;line-height:1;filter:drop-shadow(0 0 1px #fff)}
+.clock{width:clamp(110px,22vw,170px);display:inline-block;vertical-align:middle}.arrow{font-size:.8em;margin:0 10px;vertical-align:middle}
+.chart.pie{width:min(60vw,220px)}
+.kt-pz3{display:flex;align-items:center;gap:8px;justify-content:center}.kt-pz3 .pizza{width:clamp(80px,22vw,150px)}.kt-pz3 b{font-size:32px}
+.hearts{font-size:22px;letter-spacing:2px;white-space:nowrap}
+.gs.s-boss .groot.shake{animation:shake .4s}
+.balloon{animation:rise var(--dur,9s) ease-out forwards, bob 2.2s ease-in-out infinite alternate}
+@keyframes rise{from{top:100%}to{top:10%}}
+@keyframes bob{from{margin-top:0}to{margin-top:14px}}
+.e1-sky[data-lock] .balloon{animation-play-state:paused}
+.toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:60;background:#1f2937;color:#fff;border-radius:999px;padding:12px 20px;font-size:16px;font-weight:700;box-shadow:0 10px 30px rgba(0,0,0,.3);min-height:48px;max-width:92vw}
+.hold{min-width:200px;position:relative;overflow:hidden}.hold.on::after{content:'';position:absolute;left:0;top:0;bottom:0;width:0;background:rgba(255,255,255,.35);animation:fillbar 2s linear forwards}
+@keyframes fillbar{to{width:100%}}
+.det{margin:10px 0;text-align:left}.det summary{cursor:pointer;color:var(--brand);font-size:15px}
+.tiny{font-size:13px}
+.wr{text-align:left}.wr-list{max-height:55vh;overflow:auto;display:flex;flex-direction:column;gap:8px;margin:10px 0}
+.wr-it{background:#f8fafc;border-radius:12px;padding:10px 12px;font-size:15px}.wr-it b{display:block;color:var(--brand)}.wr-q{color:var(--muted);font-size:14px}.wr-it .ok{color:var(--ok);font-weight:700}.wr-it .no{color:var(--bad);text-decoration:line-through}.wr-why{color:#92400e;font-size:14px;margin-top:4px}
+textarea.inp{font-size:14px;max-width:100%;resize:vertical;-webkit-user-select:text;user-select:text}
+.subj h2 small{font-size:13px;color:var(--muted);font-weight:600}
+.stop.later{opacity:.8}
+/* 探險家主題（高年級）*/
+body[data-theme="explorer"]{--bg:#eef2f7;background:#eef2f7}
+body[data-theme="explorer"] .isle{background:linear-gradient(#1e293b 0 58%,#0f172a 58%)}
+body[data-theme="explorer"] .isle-land{background:radial-gradient(ellipse at 50% 30%,#64748b,#334155 60%,#1e293b 61%)}
+body[data-theme="explorer"] .subj.s-en{border-color:#0369a1}body[data-theme="explorer"] .subj.s-ma{border-color:#b45309}body[data-theme="explorer"] .subj.s-zh{border-color:#b91c1c}
+body[data-theme="explorer"] .s-en .gcard,body[data-theme="explorer"] .s-ma .gcard,body[data-theme="explorer"] .s-zh .gcard{background:#fff}
+body[data-theme="explorer"] .board{border-color:#94a3b8}
+body[data-theme="explorer"] .title{color:#1e293b}
+/* 減少動態、大字 */
+body.rm *,body.rm *::before,body.rm *::after{animation-duration:.001s!important;animation-iteration-count:1!important;transition-duration:.001s!important}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001s!important;animation-iteration-count:1!important;transition-duration:.001s!important}}
+body.big{font-size:20px}body.big .opt{font-size:clamp(30px,6vw,52px)}body.big .q-main{font-size:clamp(36px,7vw,60px)}body.big .passage,body.big .rd-pass{font-size:1.25em}body.big .card{font-size:18px}
+.parent,.rd-pass,.wr{-webkit-user-select:text;user-select:text}
+
+.opt{word-break:keep-all}

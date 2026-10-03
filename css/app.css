@@ -398,3 +398,14 @@ body.big{font-size:20px}body.big .opt{font-size:clamp(30px,6vw,52px)}body.big .q
 .parent,.rd-pass,.wr{-webkit-user-select:text;user-select:text}
 
 .opt{word-break:keep-all}
+
+/* 注音（題目上方標注音）與語音設定 */
+ruby.zr{ruby-position:over;ruby-align:center}
+ruby.zr rt{font-family:"KidKai","BiauKai","DFKai-SB",serif;font-size:max(12px,.5em);font-weight:700;letter-spacing:0;line-height:1.1;color:inherit;opacity:.8;white-space:nowrap;padding-bottom:1px}
+body:not(.zyon) ruby.zr rt{display:none}
+body.zyon .groot,body.zyon .groot .q-ask,body.zyon .groot .q-main,body.zyon .groot .zhs,body.zyon .groot .opt,body.zyon .rd-s,body.zyon .hint-toast,body.zyon .demo p{line-height:2.1}
+.zyb{font-family:"KidKai",serif;font-size:24px;min-width:52px;min-height:52px;color:#94a3b8;margin-left:auto}
+.zyb.on{color:var(--brand);border-color:var(--brand);background:#eff6ff}
+.vol{display:grid;grid-template-columns:minmax(150px,auto) 1fr 52px;align-items:center;gap:10px;margin:6px 0;font-size:15px}
+.vol input{width:100%;min-height:36px}.vol-v{text-align:right}
+.warn{background:#fef3c7;border-radius:10px;padding:8px 10px;font-size:15px}

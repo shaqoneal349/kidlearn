@@ -71,13 +71,18 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {}, cur: null 
       let d = null;
       try { d = JSON.parse(localStorage.getItem(KEY)); } catch (e) { }
       if (!d || !d.learners) d = { v: 3, learners: [], current: null, settings: {} };
-      d.settings = Object.assign({ sfx: true, voice: true, vib: true, rate: 1, motion: true, big: false, enAccent: 'US', enGender: 'f', enVoice: '', zhVoice: '', pin: '' }, d.settings);
+      const old = d.settings || {}, r0 = old.rate || 1;
+      // 語速分中英文；音量分「題目」（單字、字母、注音、題目本身）與「說明」（指示、鼓勵、旁白），音效另計
+      d.settings = Object.assign({ sfx: true, voice: true, vib: true, motion: true, big: false, enAccent: 'US', enGender: 'f', enVoice: '', zhVoice: '', pin: '', enRate: Math.round(.85 * r0 * 100) / 100, zhRate: Math.round(.95 * r0 * 100) / 100, volQ: 1, volT: .8, volS: .7 }, old);
+      delete d.settings.rate;
       d.learners.forEach(this.migrate); d.v = 3;
       this.data = d;
     },
     // 舊版 → 新版：只新增欄位，不刪除任何既有紀錄
     migrate(L) {
       L.gs = L.gs || { en: L.grade, ma: L.grade, zh: L.grade };
+      if (L.zy == null) L.zy = (L.grade || 1) <= 2; // 題目注音：小一小二預設打開
+      if (L.autoRead == null) L.autoRead = (L.grade || 1) <= 2; // 自動唸出沒有語音的題目（算式、文字題）
       L.log = L.log || []; L.last = L.last || {}; L.bonus = L.bonus || { fix: 0, ev: 0, rev: 0 }; L.seen = L.seen || {}; L.theme = L.theme || (L.grade >= 4 ? 'explorer' : 'kid');
       for (const id in L.skills) {
         const t = L.skills[id];
@@ -107,7 +112,7 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {}, cur: null 
     tone(f, t0, d, type = 'sine', g = .15) {
       const ac = A.ac, o = ac.createOscillator(), ga = ac.createGain();
       o.type = type; o.frequency.value = f;
-      ga.gain.setValueAtTime(g, ac.currentTime + t0);
+      ga.gain.setValueAtTime(Math.max(.002, g * (K.store.data.settings.volS ?? 1)), ac.currentTime + t0);
       ga.gain.exponentialRampToValueAtTime(.001, ac.currentTime + t0 + d);
       o.connect(ga).connect(ac.destination); o.start(ac.currentTime + t0); o.stop(ac.currentTime + t0 + d);
     },
@@ -135,13 +140,20 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {}, cur: null 
       const S = K.store.data.settings, vs = A.voices(), p = lang.slice(0, 2);
       if (p === 'zh') {
         if (S.zhVoice) { const v = vs.find(v => v.name === S.zhVoice); if (v) return v; }
-        return vs.find(v => /zh[-_]TW/i.test(v.lang)) || vs.find(v => /zh/i.test(v.lang) && /TW|Hant|Taiwan|國語|台灣|臺灣/i.test(v.lang + v.name)) || vs.find(v => /zh/i.test(v.lang)) || null;
+        return A.zhVoices()[0] || null;
       }
       if (S.enVoice) { const v = vs.find(v => v.name === S.enVoice); if (v) return v; }
       const acc = S.enAccent === 'UK' ? /en[-_]GB/i : /en[-_]US/i, en = vs.filter(v => /^en/i.test(v.lang));
       const g = v => A.gender(v), want = S.enGender;
       return en.find(v => acc.test(v.lang) && g(v) === want) || en.find(v => acc.test(v.lang) && g(v) !== (want === 'f' ? 'm' : 'f')) || en.find(v => acc.test(v.lang)) || en.find(v => g(v) === want) || en[0] || null;
     },
+    // 中文語音依「像不像臺灣口音」排序：臺灣的自然語音 → 臺灣語音 → 其他華語；粵語（香港）不用
+    isTW: v => /zh[-_]TW|Taiwan|臺灣|台灣/i.test(v.lang + ' ' + v.name),
+    zhRank(v) {
+      if (A.isTW(v)) return /Natural|Online|Neural|Enhanced|Premium|增強|優化/i.test(v.name) ? 0 : /Google/i.test(v.name) ? 1 : /Mei-?Jia|美佳/i.test(v.name) ? 2 : 3;
+      return /zh[-_]CN|cmn|Hans|普通话/i.test(v.lang + v.name) ? 5 : 6;
+    },
+    zhVoices: () => A.voices().filter(v => /^(zh|cmn)/i.test(v.lang) && !/HK|yue|Cantonese|粵|廣東/i.test(v.lang + v.name)).sort((a, b) => A.zhRank(a) - A.zhRank(b)),
     gender(v) {
       const n = v.name;
       if (/female|woman|girl|女/i.test(n)) return 'f'; if (/male|man|boy|男/i.test(n)) return 'm';
@@ -150,26 +162,37 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {}, cur: null 
       return '?';
     },
     ok(lang) { const S = K.store.data.settings; return !!(S.voice && 'speechSynthesis' in window && A.voice(lang)); },
+    rate: lang => { const S = K.store.data.settings; return lang[0] === 'e' ? S.enRate || .85 : S.zhRate || .95; },
+    // o.q：題目內容（用題目音量）；o.slow：再放慢的倍數；o.queue：接在前一句後面
     speak(text, lang = 'zh-TW', o = {}) {
       return new Promise(res => {
         const S = K.store.data.settings;
         if (!S.voice || !('speechSynthesis' in window) || !text) return res(false);
         try {
           if (!o.queue) speechSynthesis.cancel();
-          const u = new SpeechSynthesisUtterance(text);
+          const zh = lang[0] !== 'e', said = zh ? K.zhRead(text) : String(text).replace(/_{2,}|＿+/g, ' blank ');
+          const u = new SpeechSynthesisUtterance(said);
           u.lang = lang; const v = A.voice(lang); if (v) { u.voice = v; u.lang = v.lang; }
-          u.rate = (o.rate || (lang[0] === 'e' ? .85 : .95)) * (S.rate || 1);
+          const rate = A.rate(lang) * (o.slow || 1);
+          u.rate = rate; u.volume = Math.max(0, Math.min(1, o.q ? S.volQ ?? 1 : S.volT ?? 1));
           u.onend = () => res(true); u.onerror = () => res(false);
           speechSynthesis.speak(u);
-          setTimeout(() => res(true), Math.max(2500, text.length * 450) / (S.rate || 1));
+          setTimeout(() => res(true), Math.max(2500, said.length * (zh ? 400 : 110)) / rate);
         } catch (e) { res(false); }
       });
+    },
+    // 中英夾雜的句子拆段，各用對應的語音依序唸
+    async say(text, o = {}) {
+      const segs = K.segs(text);
+      for (let i = 0; i < segs.length; i++) if (!await A.speak(segs[i][0], segs[i][1], Object.assign({}, o, { queue: i > 0 || o.queue }))) return false;
+      return segs.length > 0;
     },
     playFile(url) {
       return new Promise(res => {
         try {
           const S = K.store.data.settings; if (!S.voice) return res(false);
-          A.el = A.el || new Audio(); const el = A.el; el.src = url; el.playbackRate = Math.min(1.5, Math.max(.6, S.rate || 1));
+          A.el = A.el || new Audio(); const el = A.el; el.src = url; el.volume = Math.max(0, Math.min(1, S.volQ ?? 1));
+          el.playbackRate = Math.min(1.5, Math.max(.6, (S.zhRate || .95) / .95));
           el.onended = () => res(true); el.onerror = () => res(false);
           el.play().catch(() => res(false)); setTimeout(() => res(true), 3000);
         } catch (e) { res(false); }
@@ -177,13 +200,134 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {}, cur: null 
     },
     stop() { try { speechSynthesis.cancel(); if (A.el) { A.el.pause(); } } catch (e) { } }
   };
+  // ---------- 中文朗讀前處理：阿拉伯數字與符號改成口語（2 個 → 兩個、2/3 → 三分之二、8:30 → 八點三十分）----------
+  const CN = '零一二三四五六七八九';
+  const sec = (x, head) => { // 0–9999
+    const ds = String(x).padStart(4, '0').split('').map(Number), U = ['千', '百', '十', ''];
+    let out = '', zero = false;
+    ds.forEach((d, i) => {
+      if (!d) { if (out) zero = true; return; }
+      if (zero) { out += '零'; zero = false; }
+      out += (d === 2 && i < 2 ? '兩' : d === 1 && i === 2 && !out && head ? '' : CN[d]) + U[i];
+    });
+    return out;
+  };
+  K.cnNum = s => {
+    s = String(s); const n = +s;
+    if (s.length > 1 && s[0] === '0' || n > 99999999) return s.split('').map(d => CN[d]).join('');
+    if (!n) return '零';
+    const w = Math.floor(n / 1e4), r = n % 1e4;
+    if (!w) return sec(r, true);
+    return (w === 2 ? '兩' : sec(w, true)) + '萬' + (r ? (r < 1000 ? '零' : '') + sec(r, false) : '');
+  };
+  const MEAS = '個|隻|本|張|條|顆|位|塊|元|枝|支|件|杯|輛|朵|片|包|盒|台|臺|把|頭|匹|棵|根|粒|間|座|封|雙|對|次|天|週|周|年|歲|小時|點|分鐘|秒|公尺|公分|公里|公斤|公克|公升|毫升|公頃|倍|人|頁|瓶|碗|袋|箱|串|層|艘|份|種|名|題|步|圈|格|邊|隊|組|堂|節|場|首|句|篇|筆|球|下|口|聲|罐|餐|樣|類|斤|排|行|列|半|千|百|萬|億|週';
+  const MEAS_RE = new RegExp('^\\s*(' + MEAS + ')');
+  K.zhRead = t => String(t)
+    .replace(/<[^>]+>/g, '')
+    .replace(/(\d+)\s*\/\s*(\d+)/g, (m, a, b) => `${b}分之${a}`)
+    .replace(/(^|[^\d:])(\d{1,2}):(\d{2})(?![\d:])/g, (m, p, hh, mm) => +mm < 60 && +hh < 25 ? `${p}${hh}點${+mm ? (+mm < 10 ? '零' : '') + (+mm) + '分' : ''}` : m)
+    .replace(/(\d)\s*[:：]\s*(?=[\d□])/g, '$1比')
+    .replace(/(\d+(?:\.\d+)?)\s*[%％]/g, '百分之$1')
+    .replace(/(\d+)\.(\d+)/g, (m, a, b) => K.cnNum(a) + '點' + b.split('').map(d => CN[d]).join(''))
+    .replace(/(^|[^\d\s]|[^\d]\s)[−-](?=\d)/g, '$1負')
+    .replace(/\s*[+＋]\s*/g, '加').replace(/\s*[−]\s*/g, '減').replace(/(\d)\s+-\s+(?=\d)/g, '$1減').replace(/\s*[×＊]\s*/g, '乘以').replace(/\s*[÷]\s*/g, '除以').replace(/\s*[=＝]\s*/g, '等於')
+    .replace(/□/g, '多少').replace(/＿+|_{2,}|❓/g, '什麼')
+    .replace(/(第?)(\d+)/g, (m, di, d, i, all) => di ? '第' + K.cnNum(d) : d === '2' && MEAS_RE.test(all.slice(i + m.length)) ? '兩' : K.cnNum(d))
+    .replace(/[\p{Extended_Pictographic}️‍]/gu, '').replace(/\s{2,}/g, ' ').trim();
+  // 中英夾雜拆段：[[文字, 語言]]
+  K.segs = t => {
+    const out = [], s = String(t || '').replace(/<[^>]+>/g, ' ');
+    let last = 0;
+    for (const m of s.matchAll(/[A-Za-z_][A-Za-z0-9'’,.!?;\s_-]*[A-Za-z0-9.!?_]|[A-Za-z]/g)) {
+      const zh = s.slice(last, m.index); if (/[㐀-鿿\d]/.test(zh)) out.push([zh.trim(), 'zh-TW']);
+      out.push([m[0].trim(), 'en-US']); last = m.index + m[0].length;
+    }
+    const rest = s.slice(last); if (/[㐀-鿿\d]/.test(rest)) out.push([rest.trim(), 'zh-TW']);
+    return out;
+  };
+  // 會洩漏答案的題型（題目就是在考讀音）：不加注音，也不把題目本體唸出來
+  K.NOZY = new Set(['bpmf', 'syl', 'tone', 'char', 'poly', 'phonetic']);
+  const secret = q => q.skill && K.NOZY.has(q.skill.kind);
+  const strip0 = s => String(s).replace(/<[^>]+>/g, ' ');
+  // 沒有指定語音的題目，從畫面文字組出要唸的內容（算式、文字題、閱讀題）
+  K.qText = q => {
+    if (!q.prompt || q.prompt === '🔊' || secret(q)) return '';
+    let x = String(q.prompt).replace(/<svg[\s\S]*?<\/svg>/g, ' ').replace(/<span class="nl">[\s\S]*$/, ' ')
+      .replace(/<span class="fr" data-v="(\d+)\/(\d+)">[\s\S]*?<\/span>/g, ' $2分之$1 ').replace(/<\/div>/g, '。');
+    x = strip0(x).replace(/[\p{Extended_Pictographic}️‍](?<!❓)/gu, ' ').replace(/\s+/g, ' ').trim();
+    return /[㐀-鿿A-Za-z\d]/.test(x) ? x : '';
+  };
+  K.canSay = q => !!(q && (q.say || q.audio || q.ask || K.qText(q)));
   // 唸題目：低年級先唸指示再唸內容；注音用教育部音檔，失敗才用 TTS 代字
+  // o.manual：孩子按了 🔊（沒有指定語音的題目，指示和題目都唸）
   K.sayQ = async (q, o = {}) => {
     if (!q) return;
-    const low = K.cur && K.cur.grade <= 2;
-    if (low && q.ask && !o.noAsk && !o.rate) { await A.speak(q.ask, 'zh-TW'); if (q.say || q.audio) await new Promise(r => setTimeout(r, 150)); }
-    if (q.audio) { const played = await A.playFile(q.audio); if (played) return; }
-    if (q.say) await A.speak(q.say, q.lang || 'zh-TW', Object.assign({ queue: low && q.ask && !o.noAsk }, o));
+    const L = K.store.cur && K.store.cur(), low = K.cur && K.cur.grade <= 2, qo = Object.assign({ q: true }, o);
+    if (q.say || q.audio) {
+      if (low && q.ask && !o.noAsk && !o.slow) { await A.speak(q.ask, 'zh-TW'); await new Promise(r => setTimeout(r, 150)); }
+      if (q.audio) { const played = await A.playFile(q.audio); if (played) return; }
+      if (q.say) await A.speak(q.say, q.lang || 'zh-TW', Object.assign(qo, { queue: low && q.ask && !o.noAsk }));
+      return;
+    }
+    const body = K.qText(q), auto = L && L.autoRead;
+    if (!o.manual && !auto) { if (low && q.ask && !o.noAsk) await A.speak(q.ask, 'zh-TW'); return; }
+    if (q.ask && (o.manual || !o.noAsk)) await A.speak(q.ask, 'zh-TW');
+    if (body) await A.say(body, Object.assign(qo, { queue: !!q.ask }));
+  };
+
+  // ---------- 注音（題目文字上方標注音，可在家長專區或遊戲中按「ㄅ」開關）----------
+  // 遊戲畫面裡的文字都標；字卡、拼字格、找錯字等「字本身就是答案」的元件不標
+  const ZYSEL = '.groot,.hint-toast,.demo', ZYEXC = 'ruby,svg,.nozy,.zy,.tile,.slot,.mcard,.c4-ch,.kp-wrap,input,select,textarea,.q-snd,.q-help';
+  // 文字 → 每個字的讀音（先比對詞表的多音詞，其餘用單字預設讀音）
+  K.zyOf = t => {
+    const Z = K.ZY || { c: {}, p: {} }, a = [...t], out = Array(a.length).fill('');
+    for (let i = 0; i < a.length;) {
+      let hit = 0;
+      for (let n = Math.min(6, a.length - i); n > 1; n--) { const r = Z.p[a.slice(i, i + n).join('')]; if (r) { r.split(' ').forEach((z, j) => out[i + j] = z); hit = n; break; } }
+      if (hit) { i += hit; continue; }
+      let z = Z.c[a[i]] || '';
+      if (a[i] === '地' && i >= 2 && a[i - 1] === a[i - 2]) z = 'ㄉㄜ˙'; // 慢慢地
+      out[i++] = z;
+    }
+    return out;
+  };
+  const zyText = z => z.endsWith('˙') ? '˙' + z.slice(0, -1) : z; // 輕聲點放前面
+  const zyNode = node => {
+    const t = node.nodeValue; if (!/[㐀-鿿]/.test(t)) return;
+    const a = [...t], zs = K.zyOf(t); if (!zs.some(Boolean)) return; // 沒有可標的字就不動（避免監看迴圈）
+    const frag = document.createDocumentFragment();
+    let buf = '';
+    a.forEach((c, i) => {
+      if (!zs[i]) { buf += c; return; }
+      if (buf) { frag.append(buf); buf = ''; }
+      const r = document.createElement('ruby'); r.className = 'zr'; r.append(c, K.h('rt', null, { text: zyText(zs[i]) })); frag.append(r);
+    });
+    if (buf) frag.append(buf);
+    node.replaceWith(frag);
+  };
+  const inZy = el => el && el.closest && el.closest(ZYSEL) && !el.closest(ZYEXC);
+  K.zyAnnotate = el => {
+    if (!inZy(el)) return;
+    const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, { acceptNode: n => n.parentNode.closest(ZYEXC) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+    const ns = []; while (w.nextNode()) ns.push(w.currentNode);
+    ns.forEach(zyNode);
+  };
+  K.zyOn = () => { const L = K.store.cur && K.store.cur(); return !!(L && L.zy); };
+  K.zyApply = () => {
+    document.body.classList.toggle('zyon', K.zyOn());
+    if (K.zyOn()) document.querySelectorAll(ZYSEL).forEach(K.zyAnnotate);
+  };
+  K.zyWatch = () => {
+    if (K._zyObs || typeof MutationObserver === 'undefined') return;
+    K._zyObs = new MutationObserver(ms => {
+      if (!K.zyOn()) return;
+      for (const m of ms) for (const n of m.addedNodes) {
+        if (n.nodeType === 3) { if (inZy(n.parentNode)) K.zyAnnotate(n.parentNode); continue; }
+        if (n.nodeType !== 1 || n.matches('ruby,rt')) continue;
+        if (inZy(n)) K.zyAnnotate(n); else n.querySelectorAll(ZYSEL).forEach(K.zyAnnotate);
+      }
+    });
+    K._zyObs.observe(document.body, { childList: true, subtree: true });
   };
 
   // ---------- 學習引擎 ----------
@@ -350,13 +494,14 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {}, cur: null 
   const h = K.h, strip = K.strip;
   // 題目列：指示文字 + 題目（無語音時顯示文字備援）+ 重聽 + 求助
   K.ui.prompt = q => {
-    const box = h('div', 'q-box');
+    const box = h('div', 'q-box' + (secret(q) ? ' nozy' : ''));
     if (q.ask) box.append(h('div', 'q-ask', { text: q.ask }));
     const row = h('div', 'q-row');
-    const voiceOK = q.audio || A.ok(q.lang || 'zh-TW');
-    if (q.prompt && q.prompt !== '🔊') row.append(h('div', 'q-main', { html: q.prompt }));
-    else if (!voiceOK) row.append(h('div', 'q-main nov', { html: q.novoice || `<span class="zhs">${strip(q.say)}</span>` }));
-    if (q.say || q.audio) row.append(h('button', 'q-snd' + (voiceOK ? '' : ' off'), { text: '🔊', 'aria-label': '再聽一次', onclick: () => K.sayQ(q, { noAsk: true }) }));
+    const voiceOK = q.audio || A.ok(q.lang || 'zh-TW'), nz = secret(q) ? ' nozy' : '';
+    if (q.prompt && q.prompt !== '🔊') row.append(h('div', 'q-main' + nz, { html: q.prompt }));
+    else if (!voiceOK) row.append(h('div', 'q-main nov' + nz, { html: q.novoice || `<span class="zhs">${strip(q.say)}</span>` }));
+    // 每一題都能按 🔊 唸出來：有指定語音就唸指定的，沒有就唸指示＋畫面上的題目
+    if (K.canSay(q)) row.append(h('button', 'q-snd' + (voiceOK ? '' : ' off'), { text: '🔊', 'aria-label': '再聽一次', onclick: () => K.sayQ(q, { noAsk: true, manual: true }) }));
     if (q.opts && q.opts.length > 2) row.append(h('button', 'q-help', { text: '💡', 'aria-label': '給我提示', onclick: () => q._help && q._help() }));
     box.append(row);
     return box;
@@ -373,7 +518,7 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {}, cur: null 
   K.ui.multi = (q, els, o = {}) => new Promise(res => {
     const t0 = Date.now(), two = q.opts.length > 2 && !o.single; let tries = 0, got = null, done = false, helped = false;
     const hintText = () => q.hint || (q.skill && q.skill.demo) || '再仔細看一次，慢慢想。';
-    const showHint = () => { if (o.onHint) o.onHint(); K.ui.hint(hintText(), !q.say && !q.audio); if (q.say || q.audio) setTimeout(() => K.sayQ(q, { rate: .6, noAsk: true }), 300); };
+    const showHint = () => { if (o.onHint) o.onHint(); K.ui.hint(hintText(), !q.say && !q.audio); if (q.say || q.audio) setTimeout(() => K.sayQ(q, { slow: .75, noAsk: true }), 300); };
     const finish = ok => {
       done = true; q._help = null; if (o.lock) o.lock();
       if (!ok && !o.single) { const why = q.why || ''; K.ui.hint(`正確答案是「${strip(q.opts[q.ans])}」。${why}`, true); }
@@ -394,7 +539,7 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {}, cur: null 
     }));
   });
   K.ui.choice = (root, q, o = {}) => {
-    const wrap = h('div', 'choices ' + (o.cls || '')), els = q.opts.map(op => { const L = strip(op).length, b = h('button', 'opt' + (L > 18 ? ' xl' : L > 9 ? ' long' : ''), { html: op }); return b; });
+    const wrap = h('div', 'choices ' + (o.cls || '') + (secret(q) ? ' nozy' : '')), els = q.opts.map(op => { const L = strip(op).length, b = h('button', 'opt' + (L > 18 ? ' xl' : L > 9 ? ' long' : ''), { html: op }); return b; });
     wrap.append(...els); root.append(wrap);
     return K.ui.multi(q, els, Object.assign({ lock: () => wrap.dataset.done = 1 }, o));
   };
@@ -432,7 +577,7 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {}, cur: null 
       const el = c.el = h('button', 'mcard', null, h('span', 'mc-f', { text: '❓' }), h('span', 'mc-b', { html: c.html }));
       el.onclick = async () => {
         if (lock || el.classList.contains('on')) return;
-        el.classList.add('on'); A.sfx('tap'); if (c.say) A.speak(c.say, c.it.lang || 'zh-TW'); open.push(c);
+        el.classList.add('on'); A.sfx('tap'); if (c.say) A.speak(c.say, c.it.lang || 'zh-TW', { q: true }); open.push(c);
         if (open.length < 2) return;
         lock = true; const [x, y] = open; open = [];
         if (x.it === y.it) {

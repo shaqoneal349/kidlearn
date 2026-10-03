@@ -57,7 +57,7 @@
         do { p = ctx.pick(); ws = p.skill.data.filter(okW); } while (!ws.length && ++tries < 12);
         if (!ws.length) { p = { skill: K.skill['en-animals'] }; ws = p.skill.data.filter(okW); }
         const it = K.pick(ws), word = it.w, t0 = Date.now(); let pos = 0, mist = 0, here = 0;
-        const sayIt = () => A.speak(word, 'en-US');
+        const sayIt = () => A.speak(word, 'en-US', { q: true });
         belt.replaceChildren(h('div', 'e3-item', { html: K.face(it) + (it.e && g >= 3 ? `<small>${it.zh}</small>` : '') }), h('button', 'q-snd', { text: '🔊', onclick: sayIt }));
         belt.classList.remove('ship'); void belt.offsetWidth; belt.classList.add('in'); sayIt();
         slots.replaceChildren(...[...word].map(() => h('span', 'slot')));
@@ -97,7 +97,7 @@
       root.append(top, ans, bank, go);
       for (let i = 0; i < ctx.total && ctx.alive; i++) {
         const p = ctx.pick(), it = K.pi(p.skill), words = it.s.split(' '), t0 = Date.now(); let tries = 0;
-        const sayIt = () => A.speak(it.s, 'en-US');
+        const sayIt = () => A.speak(it.s, 'en-US', { q: true });
         const pool = words.slice();
         if (ctx.grade >= 5) { const src = p.skill.data.length > 1 ? K.pick(p.skill.data.filter(x => x !== it)) : p.skill.gen(); const o = src.s.split(' ').filter(w => !words.includes(w)); if (o.length) pool.push(K.pick(o)); }
         top.replaceChildren(h('div', 'q-box', null, h('div', 'q-ask', { text: '排出這句話：' }), h('div', 'q-row', null, h('div', 'q-main', { html: `<span class="zhs">${it.zh}</span>` }), h('button', 'q-snd', { text: '🔊', onclick: sayIt }))));

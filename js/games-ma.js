@@ -19,7 +19,7 @@
           do { N = R(Math.round(max * .2), Math.round(max * .8)); const set = new Set(); while (set.size < 6) { const v = R(0, max); if (v !== N) set.add(v); } nums = [...set]; tg = nums.filter(v => big ? v > N : v < N); } while (tg.length < 2 || tg.length > 4);
           const tx = `釣起所有比 ${N} ${big ? '大' : '小'}的魚`;
           top.replaceChildren(K.ui.prompt({ prompt: `<span class="expr long">${tx}</span>`, say: tx }));
-          A.speak(tx);
+          A.speak(tx, 'zh-TW', { q: true });
           ok = await new Promise(res => {
             let left = tg.length, mist = 0;
             nums.forEach((v, j) => {
@@ -36,7 +36,7 @@
         } else if (s.kind === 'numline') {
           const nl = K.nlMake(s), tx = '把魚放到正確的位置';
           top.replaceChildren(K.ui.prompt({ ask: tx, prompt: `<span class="expr">🐟 → ${nl.labels[nl.t]}</span>`, say: tx }));
-          A.speak(tx); pond.classList.add('line');
+          A.speak(tx, 'zh-TW', { q: true }); pond.classList.add('line');
           const line = h('div', 'nl big');
           pond.append(line);
           ok = await new Promise(res => nl.labels.forEach((l, j) => {
@@ -104,7 +104,7 @@
         let ok, info;
         if (q.offers) {
           shop.replaceChildren(h('div', 'm3-cust', { text: cust }), h('div', 'm3-bubble', { text: q.want }));
-          A.speak(q.want);
+          A.speak(q.want, 'zh-TW', { q: true });
           work.replaceChildren();
           ok = await new Promise(res => {
             const wrap = h('div', 'choices two');
@@ -120,7 +120,7 @@
         } else {
           const lines = q.lines.map(l => `<div class="m3-line"><span class="em">${l.e}</span>${l.qty > 1 ? ` × ${l.qty}` : ''}<b>${l.price} 元${l.qty > 1 ? '／個' : ''}</b></div>`).join('');
           shop.replaceChildren(h('div', 'm3-cust', { text: cust }), h('div', 'm3-bubble', { html: lines + (q.note ? `<div class="m3-note">🏷️ ${q.note}</div>` : '') + (q.pay ? `<div class="m3-pay">💵 我付 ${q.pay} 元</div>` : '') }));
-          A.speak((q.pay ? `客人付了 ${q.pay} 元。` : '') + q.want);
+          A.speak((q.pay ? `客人付了 ${q.pay} 元。` : '') + q.want, 'zh-TW', { q: true });
           let sum = 0; const tray = h('div', 'm3-tray'), total = h('div', 'm3-sum', { text: '0 元' }), go = h('button', 'btn pri go', { text: '✔ 好了' });
           const upd = () => total.textContent = sum + ' 元';
           const coins = h('div', 'm3-coins', null, q.coins.map(v => h('button', 'coin v' + v, {
@@ -172,7 +172,7 @@
             tx = '把左邊的圖形對稱到右邊';
             check = () => { for (const k of fixed) if (!on.has((k & ~7) | (5 - (k & 7)))) return '還有沒對稱到的格子'; return on.size === fixed.size ? '' : '多塗了幾格喔'; };
           }
-          top.replaceChildren(K.ui.prompt({ prompt: `<span class="expr long">${tx}</span>`, say: tx })); A.speak(tx);
+          top.replaceChildren(K.ui.prompt({ prompt: `<span class="expr long">${tx}</span>`, say: tx })); A.speak(tx, 'zh-TW', { q: true });
           const grid = h('div', 'm4-grid' + (m === 'sym' ? ' sym' : ''), { style: `--c:${COLS};--r:${ROWS}` });
           for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
             const k = r << 3 | c, cell = h('button', 'cell' + (fixed.has(k) ? ' fx' : m === 'sym' && c < 3 ? ' no' : ''));
@@ -209,7 +209,7 @@
         } else {
           const sd = K.sudoku(s.data.n), n = sd.n; let sel = null, left = 0, err = 0;
           const tx = `每一排、每一行、每個粗框裡，1 到 ${n} 只能出現一次`;
-          top.replaceChildren(K.ui.prompt({ ask: tx, say: tx })); A.speak(tx);
+          top.replaceChildren(K.ui.prompt({ ask: tx, say: tx })); A.speak(tx, 'zh-TW', { q: true });
           const grid = h('div', 'sdk', { style: `--n:${n}` }), pal = h('div', 'sdk-pal');
           sd.puz.forEach((row, r) => row.forEach((v, c) => {
             const cell = h('button', 'sc' + (v ? ' giv' : '') + (c % sd.bw === 0 && c ? ' bl' : '') + (r % sd.bh === 0 && r ? ' bt' : ''), { text: v || '' });

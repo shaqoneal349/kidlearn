@@ -2,7 +2,7 @@
 // 殼層：學習者檔案、冒險島首頁與今日路線、遊戲框架、結算與錯題回顧、複習／魔王／檢定／診斷、我的島、家長專區、更新提示
 (() => {
   const K = KL, h = K.h, A = K.audio, E = K.engine;
-  const VERSION = '3.0.0';
+  const VERSION = '3.1.0';
   const app = () => document.getElementById('app'), ov = () => document.getElementById('overlay');
   const SUBJ = { en: { n: '英文', i: '🔤', isle: '英文島' }, ma: { n: '數學', i: '🔢', isle: '數學島' }, zh: { n: '國語', i: '📖', isle: '國語島' } };
   const AV = ['🦊', '🐼', '🐰', '🐯', '🐸', '🦄', '🐵', '🐱', '🧑‍🚀', '🧙', '🦸', '🥷'];
@@ -19,7 +19,10 @@
   function applyPrefs() {
     const S = K.store.data.settings, L = E.L(), b = document.body;
     b.classList.toggle('rm', !S.motion); b.classList.toggle('big', !!S.big); b.dataset.theme = L ? L.theme : 'kid';
+    K.zyWatch(); K.zyApply();
   }
+  // 遊戲畫面右上角的注音開關
+  const zyBtn = () => { const b = h('button', 'ib zyb' + (K.zyOn() ? ' on' : ''), { text: 'ㄅ', 'aria-label': '注音開關', onclick: () => { const L = E.L(); L.zy = !L.zy; K.store.save(); b.classList.toggle('on', L.zy); A.sfx('tap'); K.zyApply(); } }); return b; };
 
   // ---------- 學習者檔案 ----------
   function showProfiles() {
@@ -105,7 +108,7 @@
         if (!finished) { E.day().sec += Math.min(600, Math.round((Date.now() - round.start) / 1000)); K.store.save(); }
       }
     };
-    show(h('div', 'gs s-' + game.subj, null, h('div', 'gbar', null, h('button', 'ib', { text: '🏠', 'aria-label': '回首頁', onclick: () => { A.sfx('tap'); showHome(); } }), bar, h('div', 'gname', { text: `${game.icon} ${game.name}` })), root));
+    show(h('div', 'gs s-' + game.subj, null, h('div', 'gbar', null, h('button', 'ib', { text: '🏠', 'aria-label': '回首頁', onclick: () => { A.sfx('tap'); showHome(); } }), bar, h('div', 'gname', { text: `${game.icon} ${game.name}` }), zyBtn()), root));
     cur = ctx; K.cur = ctx;
     const intro = h('button', 'intro', null, h('span', 'gi', { text: game.icon }), h('b', null, { text: game.name }), h('span', null, { text: game.desc }), h('small', null, { text: '點一下開始 ▶' }));
     root.append(intro);
@@ -171,7 +174,7 @@
     const foe = h('div', 'boss-foe', null, h('span', 'bf', { text: theme[0] }), h('span', 'hp', null, h('i'))), hearts = h('div', 'hearts', { text: '❤️❤️❤️' }), top = h('div', 'g-top'), work = h('div', 'quiz-work');
     const single = mode === 'test' || diag;
     let alive = true, hp = 10, life = 3;
-    show(h('div', 'gs s-boss', null, h('div', 'gbar', null, h('button', 'ib', { text: '🏠', onclick: () => { A.sfx('tap'); mode === 'test' ? showParent() : showHome(); } }), bar, boss && hearts, h('div', 'gname', { text: boss ? `👑 ${theme[1]}魔王` : mode === 'review' ? '🔁 快複習' : diag ? '🧭 小探險' : '📝 小檢定' })), root));
+    show(h('div', 'gs s-boss', null, h('div', 'gbar', null, h('button', 'ib', { text: '🏠', onclick: () => { A.sfx('tap'); mode === 'test' ? showParent() : showHome(); } }), bar, boss && hearts, h('div', 'gname', { text: boss ? `👑 ${theme[1]}魔王` : mode === 'review' ? '🔁 快複習' : diag ? '🧭 小探險' : '📝 小檢定' }), zyBtn()), root));
     cur = { exit() { alive = false; cur = null; K.cur = null; } }; K.cur = { used: round.used, grade: Math.min(...Object.values(L.gs)) };
     if (boss) root.append(foe); root.append(top, work);
     if (boss) A.speak(`${theme[1]}魔王出現了！答對題目就能打敗牠，答錯會被攻擊喔！`);
@@ -281,17 +284,38 @@
   }
   function voiceCard() {
     const S = K.store.data.settings, D = K.store.data;
-    const vs = A.voices(), en = vs.filter(v => /^en/i.test(v.lang)), zh = vs.filter(v => /^zh/i.test(v.lang));
-    const sel = (opts, val, on) => { const s = h('select', 'inp sm', { onchange: e => { on(e.target.value); K.store.save(); } }, opts.map(([v, t]) => h('option', null, { value: v, text: t }))); s.value = val; return s; };
-    const test = (lang, text) => btn('🔊 試聽', '', () => A.speak(text, lang));
-    const vname = v => `${v.name}${v.localService === false ? '（網路）' : ''}`;
-    return h('div', 'card', null, h('h3', null, { text: '🔊 語音' }),
-      h('p', 'sub', { text: `這台裝置的語音：中文 ${zh.length ? '✓ ' + zh.length + ' 種' : '✗ 沒有'}　英文 ${en.length ? '✓ ' + en.length + ' 種' : '✗ 沒有'}。沒有語音時，聽力題會改成顯示文字。` }),
-      h('div', 'frow', null, h('span', null, { text: '英文口音' }), sel([['US', '美國'], ['UK', '英國']], S.enAccent, v => { S.enAccent = v; S.enVoice = ''; showParent(); }), h('span', null, { text: '聲音' }), sel([['f', '女生'], ['m', '男生']], S.enGender, v => { S.enGender = v; S.enVoice = ''; showParent(); }), test('en-US', 'Hello! I am your English teacher. Nice to meet you.')),
+    const vs = A.voices(), en = vs.filter(v => /^en/i.test(v.lang)), zh = A.zhVoices(), tw = zh.filter(A.isTW);
+    const sel = (opts, val, on) => { const s = h('select', 'inp sm', { onchange: e => { on(e.target.value); K.store.save(); } }, opts.map(([v, t]) => h('option', null, { value: v, text: t }))); s.value = String(val); return s; };
+    const test = (lang, text) => btn('🔊 試聽', '', () => A.speak(text, lang, { q: true }));
+    const vname = v => `${A.isTW(v) ? '🇹🇼 ' : ''}${v.name}${v.localService === false ? '（網路）' : ''}`;
+    const pct = v => Math.round(v * 100) + '%';
+    const slider = (key, label, sample) => {
+      const out = h('b', 'vol-v', { text: pct(S[key]) });
+      return h('label', 'vol', null, h('span', null, { text: label }), h('input', null, { type: 'range', min: 0, max: 100, step: 5, value: Math.round(S[key] * 100), oninput: e => { S[key] = +e.target.value / 100; out.textContent = pct(S[key]); }, onchange: () => { K.store.save(); sample(); } }), out);
+    };
+    const RATES = [[.6, '很慢'], [.75, '慢'], [.85, '稍慢'], [.95, '正常'], [1.1, '快']];
+    const near = v => RATES.reduce((a, r) => Math.abs(r[0] - v) < Math.abs(a - v) ? r[0] : a, RATES[0][0]);
+    const cur = A.voice('zh-TW');
+    return h('div', 'card', null, h('h3', null, { text: '🔊 語音與音量' }),
+      h('p', 'sub', { text: `這台裝置的語音：臺灣中文 ${tw.length ? '✓ ' + tw.length + ' 種' : '✗ 沒有'}　英文 ${en.length ? '✓ ' + en.length + ' 種' : '✗ 沒有'}。沒有語音時，聽力題會改成顯示文字。` }),
+      h('h4', null, { text: '英文' }),
+      h('div', 'frow', null, h('span', null, { text: '口音' }), sel([['US', '美國'], ['UK', '英國']], S.enAccent, v => { S.enAccent = v; S.enVoice = ''; showParent(); }), h('span', null, { text: '聲音' }), sel([['f', '女生'], ['m', '男生']], S.enGender, v => { S.enGender = v; S.enVoice = ''; showParent(); })),
+      h('div', 'frow', null, h('span', null, { text: '英文語速' }), sel(RATES, near(S.enRate), v => { S.enRate = +v; A.speak('apple. banana. Hello! How are you?', 'en-US', { q: true }); }), test('en-US', 'A, B, C. Hello! I am your English teacher. Nice to meet you.')),
       h('div', 'frow', null, h('span', null, { text: '指定英文語音' }), sel([['', `自動（目前：${(A.voice('en-US') || {}).name || '無'}）`]].concat(en.map(v => [v.name, `${vname(v)} · ${v.lang}`])), S.enVoice, v => S.enVoice = v)),
-      h('div', 'frow', null, h('span', null, { text: '指定中文語音' }), sel([['', `自動（目前：${(A.voice('zh-TW') || {}).name || '無'}）`]].concat(zh.map(v => [v.name, `${vname(v)} · ${v.lang}`])), S.zhVoice, v => S.zhVoice = v), test('zh-TW', '你好，我是小小學習家。我們一起來學習吧！')),
-      h('div', 'frow', null, h('span', null, { text: '語速' }), sel([[.75, '慢'], [1, '正常'], [1.2, '快']], String(S.rate), v => S.rate = +v), btn('🔊 試聽注音', '', () => K.sayQ({ audio: K.BPMF_FILE['ㄅ'], say: '玻' }))),
-      h('p', 'sub', { text: 'iPad／iPhone 可在「設定 → 輔助使用 → 朗讀內容 → 聲音」下載更自然的英文（如 Samantha、Daniel）與中文語音；Android 在「設定 → 一般管理 → 文字轉語音」。注音符號使用教育部開放音檔，不受裝置影響。' }));
+      h('h4', null, { text: '中文' }),
+      h('div', 'frow', null, h('span', null, { text: '中文語速' }), sel(RATES, near(S.zhRate), v => { S.zhRate = +v; A.speak('我有兩個蘋果，你有幾個？', 'zh-TW', { q: true }); }), test('zh-TW', '你好，我是小小學習家。我有兩個蘋果和二十二顆糖果。'), btn('🔊 試聽注音', '', () => K.sayQ({ audio: K.BPMF_FILE['ㄅ'], say: '玻' }))),
+      h('div', 'frow', null, h('span', null, { text: '指定中文語音' }), sel([['', `自動（目前：${cur ? vname(cur) : '無'}）`]].concat(zh.map(v => [v.name, `${vname(v)} · ${v.lang}`])), S.zhVoice, v => S.zhVoice = v)),
+      cur && !A.isTW(cur) && h('p', 'warn', { text: '⚠️ 目前用的不是臺灣中文語音，發音會比較像大陸口音。請依下面的說明安裝「中文（臺灣）」語音。' }),
+      h('h4', null, { text: '音量' }),
+      slider('volQ', '題目（單字、字母、注音）', () => A.speak('A. B. apple.', 'en-US', { q: true })),
+      slider('volT', '說明與鼓勵', () => A.speak('做得很好！', 'zh-TW')),
+      slider('volS', '音效', () => A.sfx('ok')),
+      h('p', 'sub', { text: '題目已經是最大聲時，可以把「說明與鼓勵」和「音效」調小一點，題目聽起來就會比較清楚。裝置本身的音量也要開大。' }),
+      h('details', 'det', null, h('summary', null, { text: '怎麼讓發音更像臺灣人？' }),
+        h('p', 'sub', { text: '電腦：用 Microsoft Edge 開啟，會自動使用「HsiaoChen／HsiaoYu／YunJhe（自然語音）」等臺灣語音，最自然。Windows 也可在「設定 → 時間與語言 → 語音 → 新增語音」安裝「中文（台灣）」。' }),
+        h('p', 'sub', { text: 'iPad／iPhone：「設定 → 輔助使用 → 朗讀內容 → 聲音 → 中文 → 中文（台灣）」下載「美佳」（增強版更自然）；英文可下載 Samantha、Daniel。' }),
+        h('p', 'sub', { text: 'Android：「設定 → 一般管理 → 文字轉語音」，引擎選 Google，語言選「中文（台灣）」並下載語音資料。' }),
+        h('p', 'sub', { text: '注音符號使用教育部開放音檔，不受裝置影響。' })));
   }
   function showParent() {
     const L = E.L(), D = K.store.data, S = D.settings, today = K.today();
@@ -303,6 +327,8 @@
       h('div', 'frow', null, h('span', null, { text: '每日上限' }), sel([[0, '不限制'], [10, '10 分鐘'], [15, '15 分鐘'], [20, '20 分鐘'], [30, '30 分鐘'], [45, '45 分鐘']], L.limit, v => L.limit = +v),
         btn('今天再加 10 分鐘', '', () => { L.extra[today] = (L.extra[today] || 0) + 10; K.store.save(); showParent(); })),
       h('div', 'frow', null, h('span', null, { text: '主題' }), sel([['kid', '小島與寵物（低年級）'], ['explorer', '探險家（高年級）']], L.theme, v => { L.theme = v; applyPrefs(); })),
+      h('div', 'frow', null, tog('題目加注音', 'zy', L), tog('自動唸出題目（算式、文字題）', 'autoRead', L)),
+      h('p', 'sub', { text: '注音會標在題目和選項上方；考注音、考讀音的題目不會標，以免直接看到答案。遊戲中也可以按右上角的「ㄅ」開關。' }),
       h('div', 'frow', null, tog('音效', 'sfx'), tog('語音旁白', 'voice'), tog('震動回饋', 'vib'), tog('畫面動態', 'motion'), tog('大字模式', 'big')),
       h('div', 'frow', null, h('span', null, { text: '家長密碼（四位數，留空則用乘法題）' }), h('input', 'inp sm', { type: 'number', inputmode: 'numeric', value: S.pin, placeholder: '例如 1234', onchange: e => { S.pin = /^\d{4}$/.test(e.target.value) ? e.target.value : ''; K.store.save(); } })));
     const week = Array.from({ length: 7 }, (_, i) => K.addDays(today, i - 6)), mins = week.map(d => Math.round(((L.days[d] || {}).sec || 0) / 60)), mx = Math.max(10, ...mins), WD = ['日', '一', '二', '三', '四', '五', '六'];

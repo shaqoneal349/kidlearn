@@ -12,7 +12,7 @@
     for (let i = 0; i < ctx.total && ctx.alive; i++) {
       const p = ctx.pick(), it = K.pi(p.skill), sents = K.sentences(it.t, en), ev = (it.ev || []).filter(x => x < sents.length);
       const els = sents.map(s => h('button', 'rd-s', { text: s + (en ? ' ' : '') }));
-      const readIt = () => A.speak(it.t, lang);
+      const readIt = () => A.speak(it.t, lang, { q: true });
       pass.replaceChildren(h('button', 'q-snd sm', { text: '🔊', onclick: readIt }), ...els); pass.dataset.step = 1;
       if (ctx.grade <= 2) readIt();
       const wrap = t => en ? `<span class="enw sm">${t}</span>` : `<span class="zhs">${t}</span>`;
@@ -61,7 +61,7 @@
         if (!ctx.alive) return;
         // 跟讀：只做練習，不用語音辨識評分，避免用口音判定好壞
         work.replaceChildren(h('div', 'tk-me', null, h('div', 'enw', { text: it.a }), h('small', null, { text: '🗣️ 跟著說一次！' })));
-        await A.speak(it.a, 'en-US', { rate: .7 }); await ctx.wait(1600);
+        await A.speak(it.a, 'en-US', { slow: .8, q: true }); await ctx.wait(1600);
         await ctx.report(p, r.ok, r.ms, r);
       }
       ctx.done();
@@ -124,7 +124,7 @@
           body = [fig, h('div', 'sub', { text: pct ? '點一下要倒到的高度' : '點披薩，選出要給客人的那幾片' })];
           check = () => on.size === k ? '' : on.size < k ? `還差 ${k - on.size} ${pct ? '格' : '片'}` : `多了 ${on.size - k} ${pct ? '格' : '片'}`;
         }
-        top.replaceChildren(K.ui.prompt({ prompt: `<span class="expr long">🧾 ${tx}</span>`, say: tx.replace(/[🧃💧]/g, '').replace('/', ' 分之 ') })); A.speak(tx.replace(/\p{Extended_Pictographic}/gu, ''));
+        top.replaceChildren(K.ui.prompt({ prompt: `<span class="expr long">🧾 ${tx}</span>`, say: tx.replace(/[🧃💧]/g, '').replace('/', ' 分之 ') })); A.speak(tx.replace(/\p{Extended_Pictographic}/gu, ''), 'zh-TW', { q: true });
         work.replaceChildren(...body, msg, go); delete work.dataset.lock;
         const ok = await new Promise(res => go.onclick = () => {
           if (work.dataset.lock) return;

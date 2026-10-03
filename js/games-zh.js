@@ -3,7 +3,7 @@
 (() => {
   const K = KL, h = K.h, A = K.audio;
   const shake = el => { el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); };
-  const sayC = it => A.speak(`${it.c}。${it.w}的${it.c}。`);
+  const sayC = it => A.speak(`${it.c}。${it.w}的${it.c}。`, 'zh-TW', { q: true });
 
   K.games.c1 = {
     id: 'c1', subj: 'zh', name: '注音拼讀列車', icon: '🚂', cog: '辨識／產出', kinds: ['bpmf', 'tone', 'syl', 'char', 'poly'], n: 8,

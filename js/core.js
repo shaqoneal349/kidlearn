@@ -495,7 +495,7 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {}, cur: null 
   // 題目列：指示文字 + 題目（無語音時顯示文字備援）+ 重聽 + 求助
   K.ui.prompt = q => {
     const box = h('div', 'q-box' + (secret(q) ? ' nozy' : ''));
-    if (q.ask) box.append(h('div', 'q-ask', { text: q.ask }));
+    if (q.ask) box.append(h('div', 'q-ask tap', { text: q.ask, title: '點一下聽題目', onclick: () => A.speak(q.ask) })); // 點指示文字就唸出來
     const row = h('div', 'q-row');
     const voiceOK = q.audio || A.ok(q.lang || 'zh-TW'), nz = secret(q) ? ' nozy' : '';
     if (q.prompt && q.prompt !== '🔊') row.append(h('div', 'q-main' + nz, { html: q.prompt }));
@@ -518,10 +518,12 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {}, cur: null 
   K.ui.multi = (q, els, o = {}) => new Promise(res => {
     const t0 = Date.now(), two = q.opts.length > 2 && !o.single; let tries = 0, got = null, done = false, helped = false;
     const hintText = () => q.hint || (q.skill && q.skill.demo) || '再仔細看一次，慢慢想。';
-    const showHint = () => { if (o.onHint) o.onHint(); K.ui.hint(hintText(), !q.say && !q.audio); if (q.say || q.audio) setTimeout(() => K.sayQ(q, { slow: .75, noAsk: true }), 300); };
+    const showHint = () => { if (o.onHint) o.onHint(); K.ui.hint(hintText(), !q.say && !q.audio); const ht = document.querySelector('.hint-toast'); if (ht) ht.classList.toggle('nozy', secret(q)); if (q.say || q.audio) setTimeout(() => K.sayQ(q, { slow: .75, noAsk: true }), 300); };
     const finish = ok => {
       done = true; q._help = null; if (o.lock) o.lock();
-      if (!ok && !o.single) { const why = q.why || ''; K.ui.hint(`正確答案是「${strip(q.opts[q.ans])}」。${why}`, true); }
+      const out = () => { K.ui.hint(null); res({ ok: ok && !tries && !helped, fixed: ok && (tries > 0 || helped), hint: tries > 0 || helped, ms: Date.now() - t0, want: strip(q.opts[q.ans]), got: got == null ? '' : strip(q.opts[got]), q }); };
+      // 答錯：留著說明，等孩子看完按「下一步」再繼續
+      if (!ok && !o.single) { const why = q.why || ''; K.ui.hint(`正確答案是「${strip(q.opts[q.ans])}」。${why}`, true); const t = document.querySelector('.hint-toast'); if (t) { t.append(h('button', 'btn pri next', { text: '我知道了，下一題 →', onclick: () => { A.sfx('tap'); A.stop(); out(); } })); return; } }
       setTimeout(() => { K.ui.hint(null); res({ ok: ok && !tries && !helped, fixed: ok && (tries > 0 || helped), hint: tries > 0 || helped, ms: Date.now() - t0, want: strip(q.opts[q.ans]), got: got == null ? '' : strip(q.opts[got]), q }); }, ok ? (o.okWait || 800) : (o.badWait || (q.why ? 2600 : 1900)));
     };
     q._help = () => {

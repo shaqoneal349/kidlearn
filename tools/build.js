@@ -20,7 +20,7 @@ const ver = hash.digest('hex').slice(0, 10);
 const sw = `// 由 tools/build.js 產生：版本 = 所有檔案內容的雜湊，任何檔案改動都會換新快取
 const CACHE = 'kidlearn-${ver}';
 const FILES = ${JSON.stringify(['./'].concat(files))};
-self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))));
+self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting())));
 self.addEventListener('activate', e => e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())));
 self.addEventListener('message', e => { if (e.data === 'SKIP_WAITING') self.skipWaiting(); });
 self.addEventListener('fetch', e => {

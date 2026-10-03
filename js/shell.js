@@ -349,7 +349,7 @@
         btn('列印報告', '', () => window.print())),
       h('div', 'frow', null, btn('刪除這位小朋友', 'danger', () => { if (confirm(`確定刪除「${L.name}」的所有紀錄嗎？無法復原。`)) { D.learners = D.learners.filter(x => x !== L); D.current = null; K.store.save(); showProfiles(); } })));
     const about = h('div', 'card', null, h('h3', null, { text: '📲 安裝與更新' }), h('p', 'sub', { html: 'iPhone／iPad：用 Safari 開啟 → 分享按鈕 → 「加入主畫面」。<br>Android：用 Chrome 開啟 → 選單 → 「安裝應用程式」或「加到主畫面」。<br>安裝後可離線使用；有新版本時畫面下方會出現更新提示。' }),
-      h('div', 'frow', null, btn('檢查更新', '', async () => { if (swReg) { await swReg.update(); toast(swReg.waiting ? '有新版本，點畫面下方的提示更新' : '已經是最新版本'); } else toast('目前不是安裝版'); }), h('span', 'sub', { text: `版本 ${VERSION}｜知識點 ${K.skills.length} 個｜遊戲 ${Object.keys(K.games).length} 款` })),
+      h('div', 'frow', null, btn('檢查更新', '', async () => { if (swReg) { await swReg.update(); toast('已檢查，有新版本時會出現提示'); } else toast('目前不是安裝版'); }), h('span', 'sub', { text: `版本 ${VERSION}｜知識點 ${K.skills.length} 個｜遊戲 ${Object.keys(K.games).length} 款` })),
       h('p', 'sub', { html: '素材來源：注音音檔 © 2017 教育部《國語注音符號手冊》開放部件（CC BY 4.0）；筆順 Hanzi Writer（MIT）與 Make Me a Hanzi；字型 LXGW WenKai TC、Andika（SIL OFL）；英文字彙依教育部「國民中小學英語基本字詞」。' }));
     show(h('div', 'screen parent', null, h('div', 'hm-head', null, btn('🏠 回小島', '', showHome), h('h1', null, { text: '家長專區' })), set, voiceCard(), usage, trend, weak, heat, tests, backup, about));
   }
@@ -358,10 +358,8 @@
   window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; });
   K.swReady = reg => {
     swReg = reg;
-    const offer = () => toast('🎉 有新版本，點一下更新', () => { reg.waiting && reg.waiting.postMessage('SKIP_WAITING'); });
-    if (reg.waiting) offer();
-    reg.addEventListener('updatefound', () => { const w = reg.installing; w && w.addEventListener('statechange', () => { if (w.state === 'installed' && navigator.serviceWorker.controller) offer(); }); });
-    navigator.serviceWorker.addEventListener('controllerchange', () => location.reload());
+    // 新版本下載好後不打斷正在玩的回合：顯示提示，點一下才重新載入
+    navigator.serviceWorker.addEventListener('controllerchange', () => toast('🎉 新版本準備好了，點一下更新', () => location.reload()));
   };
   window.addEventListener('DOMContentLoaded', () => {
     K.store.load();

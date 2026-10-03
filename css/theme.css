@@ -194,3 +194,7 @@ body[data-theme="explorer"] .subj{background:#fff}
 .mc-b{font-size:min(1em,calc(var(--fit,40) * 1cqi));line-height:1.15;max-width:100%;overflow-wrap:anywhere}
 .mc-b .enw.sm,.mc-b .zhc,.mc-b .zhs{font-size:1em}
 .mgrid.wide .mcard{aspect-ratio:1.6/1;max-height:none}
+/* 探險家主題：遊戲卡保留科目漸層（app.css 舊規則會把卡片改成白底，配白字就看不到） */
+body[data-theme="explorer"] .s-en .gcard{background:linear-gradient(160deg,#0ea5e9,#075985)}
+body[data-theme="explorer"] .s-ma .gcard{background:linear-gradient(160deg,#f59e0b,#9a3412)}
+body[data-theme="explorer"] .s-zh .gcard{background:linear-gradient(160deg,#f43f5e,#881337)}

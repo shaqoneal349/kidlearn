@@ -56,7 +56,7 @@
 | `js/games-*.js` | 遊戲模組，各自只負責「呈現題目、接收答案」；`games-plus.js` 是 v2 新增的 6 款，`games-more.js` 是 v3.2 新增的 2 款 |
 | `js/puzzles.js`、`css/puzzles.css` | 益智島：共用關卡框架（地圖、三星、簡單版、知識寶箱）與 5 款益智遊戲 |
 | `js/help.js` | 功能介紹蓋屏、使用手冊、意見回饋（端點設定在檔頭，Apps Script 原始碼見 `tools/feedback-apps-script.gs`） |
-| `css/theme.css`、`css/app-modern.css` | 基礎遊戲樣式與新版 App 介面覆寫；版面基礎在 `css/app.css` |
+| `css/theme.css` | v3.3 遊戲風外觀（只覆寫外觀，版面在 `css/app.css`） |
 | `js/shell.js` | 殼層：學習者檔案、首頁任務板、結算、魔王挑戰、圖鑑、家長專區 |
 | `sw.js` | 離線快取（cache-first） |
 | `vendor/` | 筆順套件 hanzi-writer（MIT）與筆順資料（源自 Make Me a Hanzi，Arphic Public License） |

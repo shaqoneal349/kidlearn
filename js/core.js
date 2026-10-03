@@ -222,7 +222,7 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {}, cur: null 
   };
   const MEAS = '個|隻|本|張|條|顆|位|塊|元|枝|支|件|杯|輛|朵|片|包|盒|台|臺|把|頭|匹|棵|根|粒|間|座|封|雙|對|次|天|週|周|年|歲|小時|點|分鐘|秒|公尺|公分|公里|公斤|公克|公升|毫升|公頃|倍|人|頁|瓶|碗|袋|箱|串|層|艘|份|種|名|題|步|圈|格|邊|隊|組|堂|節|場|首|句|篇|筆|球|下|口|聲|罐|餐|樣|類|斤|排|行|列|半|千|百|萬|億|週';
   const MEAS_RE = new RegExp('^\\s*(' + MEAS + ')');
-  K.zhRead = t => String(t)
+  const zhRead0 = t => String(t)
     .replace(/<[^>]+>/g, '')
     .replace(/(\d+)\s*\/\s*(\d+)/g, (m, a, b) => `${b}分之${a}`)
     .replace(/(^|[^\d:])(\d{1,2}):(\d{2})(?![\d:])/g, (m, p, hh, mm) => +mm < 60 && +hh < 25 ? `${p}${hh}點${+mm ? (+mm < 10 ? '零' : '') + (+mm) + '分' : ''}` : m)
@@ -234,6 +234,14 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {}, cur: null 
     .replace(/□/g, '多少').replace(/＿+|_{2,}|❓/g, '什麼')
     .replace(/(第?)(\d+)/g, (m, di, d, i, all) => di ? '第' + K.cnNum(d) : d === '2' && MEAS_RE.test(all.slice(i + m.length)) ? '兩' : K.cnNum(d))
     .replace(/[\p{Extended_Pictographic}️‍]/gu, '').replace(/\s{2,}/g, ' ').trim();
+  // 語音引擎常唸錯的多音字：依注音字典判斷這個字在詞裡的讀音，換成同音字再交給語音（只影響發音，不影響畫面）
+  // 例：「數一數」裡的數是 ㄕㄨˇ，但 Windows／Android 語音常唸成 ㄕㄨˋ。
+  const SAY_SUB = { '數ㄕㄨˇ': '暑', '背ㄅㄟ': '杯' };
+  K.zhRead = t => {
+    const x = zhRead0(t); if (!K.zyOf || !/[數背]/.test(x)) return x;
+    const a = [...x], zs = K.zyOf(x);
+    return a.map((c, i) => SAY_SUB[c + zs[i]] || c).join('');
+  };
   // 中英夾雜拆段：[[文字, 語言]]
   K.segs = t => {
     const out = [], s = String(t || '').replace(/<[^>]+>/g, ' ');
@@ -571,12 +579,15 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {}, cur: null 
   K.ui.memory = (grid, ctx, p, items, onPair) => new Promise(res => {
     const cards = K.shuffle(items.flatMap(it => [{ it, html: it.a, say: it.say }, { it, html: it.b, say: it.sayB === undefined ? it.say : it.sayB }]));
     const W = grid.parentNode.clientWidth, H = grid.parentNode.clientHeight - 80, n = cards.length;
-    let cols = 4; for (const c of [8, 6, 5, 4, 3]) { const rows = Math.ceil(n / c), size = Math.min((W - 10 * c) / c, (H - 10 * rows) / rows / 1.05); if (size >= 70 || c === 3) { cols = c; if (size >= 70) break; } }
-    grid.style.setProperty('--c', cols);
+    const longest = Math.max(...cards.map(c => strip(c.html).length)); // 有長單字時用比較少欄，卡片才夠寬
+    let cols = 4; for (const c of (longest > 8 ? [3] : longest > 6 ? [5, 4, 3] : [8, 6, 5, 4, 3])) { const rows = Math.ceil(n / c), size = Math.min((W - 10 * c) / c, (H - 10 * rows) / rows / 1.05); if (size >= 70 || c === 3) { cols = c; if (size >= 70) break; } }
+    grid.style.setProperty('--c', cols); grid.classList.toggle('wide', longest > 8);
     grid.replaceChildren();
     let open = [], lock = false, left = items.length; const seen = new Set(), miss = {};
     cards.forEach(c => {
-      const el = c.el = h('button', 'mcard', null, h('span', 'mc-f', { text: '❓' }), h('span', 'mc-b', { html: c.html }));
+      // 長單字自動縮小字級：依字數算出卡片寬度內放得下的大小（cqi = 卡片寬度的 1%）
+      const tx = strip(c.html).replace(/\s+/g, ' '), n = Math.max(1, [...tx].length), cjk = /[㐀-鿿]/.test(tx);
+      const el = c.el = h('button', 'mcard', null, h('span', 'mc-f', { text: '❓' }), h('span', 'mc-b', { html: c.html, style: `--fit:${Math.min(40, (cjk ? 80 : 165) / n).toFixed(1)}` }));
       el.onclick = async () => {
         if (lock || el.classList.contains('on')) return;
         el.classList.add('on'); A.sfx('tap'); if (c.say) A.speak(c.say, c.it.lang || 'zh-TW', { q: true }); open.push(c);

@@ -17,6 +17,32 @@
 - v3.3：遊戲風外觀（參考手機遊戲與 Lingokids／Khan Kids）——頂部狀態列與計數膠囊、立體小島、關卡點路線、
   收藏卡風格的遊戲卡（能力值／NEW）、光澤立體按鈕與選項、新手引導小手；家長專區改成「報告／技能地圖／設定／資料」分頁；
   第一次開啟的功能介紹蓋屏、使用手冊（家長端／小朋友端／常見問題）、意見回饋（寫進 Google 試算表，離線時先存起來之後補送）。
+- v3.4：新增「益智島」5 款益智遊戲（水果三消、方塊下落、數字合成、方塊拼圖、彩球分類），關卡地圖＋三星評分、依年級決定起始關、
+  連輸 3 次提供簡單版、每過兩關開「知識寶箱」；翻牌卡長單字自動縮小；語音把「數一數」等多音字唸對；Service Worker 安裝時不吃瀏覽器舊快取。
+
+## 益智島的設計依據
+
+參考長青益智遊戲（Candy Crush、Tetris、2048、Katamino／GiiKER、Ball Sort）讓人每天想玩的元素，並刪掉不適合孩子的部分：
+
+| 採用 | 做法 |
+|---|---|
+| 短關卡、單一明確目標 | 一關 1–3 分鐘；目標寫在畫面上方（收集 8 個 🍎、消 5 排、合成 128） |
+| 立即回饋與連鎖 | 消除動畫、連鎖 ×2 提示、音效；每次合成顯示算式 |
+| 難度曲線（心流） | 依年級決定起始關；連輸 3 次提供「簡單一點」；過關才往下一關 |
+| 看得見的進度 | 關卡地圖、每關三星、首頁卡片顯示目前關卡與總星數 |
+| 差一點點的再挑戰 | 失敗時告訴孩子「只差 2 個」，一鍵重來 |
+| 學科元素 | 三消唸英文單字、合成顯示加法／乘法、拼圖顯示面積算式、彩球低年級是注音並播放發音、每兩關一題知識寶箱 |
+
+| 不採用 | 原因 |
+|---|---|
+| 體力、等待時間、付費續命 | 屬於操弄手法，對孩子不健康 |
+| 無限時間 | 益智島和學習遊戲共用每日時間上限 |
+
+參考資料：[Deconstructing Candy Crush（Emerald）](https://www.emerald.com/insight/content/doi/10.1108/ijilt-09-2014-0019/full/html)、
+[Game Developer：Candy Crush 設計分析](https://www.gamedeveloper.com/design/candy-crush-saga-a-sweet-journey-into-monetization)、
+[Yu-kai Chou：Candy Crush 遊戲機制](https://yukaichou.com/gamification-study/game-mechanics-research-candy-crush-addicting/)、
+[ScienceDaily：拼圖與積木有助孩子空間能力](https://www.sciencedaily.com/releases/2015/01/150128131323.htm)、
+[ScienceDirect：Tetris 作為認知訓練的限制](https://www.sciencedirect.com/science/article/abs/pii/S0361476X17304988)。
 
 ## 架構
 
@@ -28,8 +54,9 @@
 | `js/content-*.js` | 三科內容包：知識點定義、題庫資料與模板生成器、選擇題產生器 |
 | `js/content-plus.js` | v2 內容：閱讀證據句、情境對話、句子修理、數字廚房、圖表、自動解題提示 |
 | `js/games-*.js` | 遊戲模組，各自只負責「呈現題目、接收答案」；`games-plus.js` 是 v2 新增的 6 款，`games-more.js` 是 v3.2 新增的 2 款 |
+| `js/puzzles.js`、`css/puzzles.css` | 益智島：共用關卡框架（地圖、三星、簡單版、知識寶箱）與 5 款益智遊戲 |
 | `js/help.js` | 功能介紹蓋屏、使用手冊、意見回饋（端點設定在檔頭，Apps Script 原始碼見 `tools/feedback-apps-script.gs`） |
-| `css/theme.css` | v3.3 遊戲風外觀（只覆寫外觀，版面在 `css/app.css`） |
+| `css/theme.css`、`css/app-modern.css` | 基礎遊戲樣式與新版 App 介面覆寫；版面基礎在 `css/app.css` |
 | `js/shell.js` | 殼層：學習者檔案、首頁任務板、結算、魔王挑戰、圖鑑、家長專區 |
 | `sw.js` | 離線快取（cache-first） |
 | `vendor/` | 筆順套件 hanzi-writer（MIT）與筆順資料（源自 Make Me a Hanzi，Arphic Public License） |

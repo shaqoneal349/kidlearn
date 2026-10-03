@@ -2,7 +2,7 @@
 // 殼層：學習者檔案、冒險島首頁與今日路線、遊戲框架、結算與錯題回顧、複習／魔王／檢定／診斷、我的島、家長專區、更新提示
 (() => {
   const K = KL, h = K.h, A = K.audio, E = K.engine;
-  const VERSION = '3.3.0'; K.VERSION = VERSION;
+  const VERSION = '3.4.0'; K.VERSION = VERSION;
   const app = () => document.getElementById('app'), ov = () => document.getElementById('overlay');
   const SUBJ = { en: { n: '英文', i: '🔤', isle: '英文島' }, ma: { n: '數學', i: '🔢', isle: '數學島' }, zh: { n: '國語', i: '📖', isle: '國語島' } };
   const AV = ['🦊', '🐼', '🐰', '🐯', '🐸', '🦄', '🐵', '🐱', '🧑‍🚀', '🧙', '🦸', '🥷'];
@@ -71,7 +71,7 @@
   function showHome() {
     const L = E.L(); if (!L) return showProfiles();
     const pet = K.pet(), over = E.overLimit(), route = E.route(), nx = nextStop(), wk = E.weekDays(), ex = L.theme === 'explorer';
-    // 頂部狀態列（遊戲風 HUD）：頭像名牌＋三個計數膠囊＋我的島＋家長
+    // 首頁狀態列：學習者、學習紀錄、收藏與家長入口
     const pill = (icon, n, label, cls) => h('span', 'hud-pill ' + cls, { title: label }, h('i', null, { text: icon }), h('b', null, { text: n }), h('small', null, { text: label }));
     const head = h('div', 'hm-head hud', null,
       h('button', 'hm-me', { onclick: () => { A.sfx('tap'); showProfiles(); } }, h('span', 'pf-av sm', { text: L.avatar }), h('span', 'hm-id', null, h('b', null, { text: L.name }), h('small', null, { text: `${pet.e} ${pet.name}` }))),
@@ -87,8 +87,9 @@
       return h('button', 'stop ' + state + (st.s ? ' s-' + st.s : ''), { onclick: () => { if (state === 'done') return; if (over && !(st.k === 'review' || (st.k === 'game' && calm(K.games[st.id])))) return A.speak('今天玩得很棒了，明天再來吧！'); A.sfx('tap'); runStop(i); } },
         h('span', 'stop-i', { text: st.done ? '✅' : inf.i }), h('span', 'stop-n', { text: inf.n }));
     }));
-    const board = h('div', 'board', null, h('div', 'bd-t', { text: nx < 0 ? '🎉 今天的冒險完成了！可以自由探險，或是休息一下。' : '🧭 今日冒險：建議照順序走，想先玩哪一站也可以。' }), path,
-      nx >= 0 && !over && h('button', 'btn pri go-big', { text: `出發！▶ ${stopInfo(route[nx]).n}`, onclick: () => { A.sfx('tap'); runStop(nx); } }));
+    const board = h('section', 'board', null, h('h2', 'bd-t', { text: nx < 0 ? '今日學習已完成' : '今日學習' }),
+      h('p', 'bd-sub', { text: nx < 0 ? '做得很好！可以繼續選喜歡的遊戲，或休息一下。' : '依照路線練習，也可以直接選想玩的關卡。' }), path,
+      nx >= 0 && !over && h('button', 'btn pri go-big', { text: `開始 ${stopInfo(route[nx]).n}`, onclick: () => { A.sfx('tap'); runStop(nx); } }));
     const cols = h('div', 'subjs', null, Object.keys(SUBJ).map(s => {
       const mine = K.skills.filter(k => k.subj === s && k.g === L.gs[s]), solid = mine.filter(k => E.stage(k.id) >= 2).length;
       return h('section', 'subj s-' + s, null,
@@ -96,12 +97,23 @@
         h('div', 'isl-bar', null, h('i', null, { style: `width:${mine.length ? solid / mine.length * 100 : 0}%` })),
         h('div', 'gcards', null, Object.values(K.games).filter(g => g.subj === s).map(g => {
           const off = over && !calm(g), pc = gamePct(g, L), isNew = !L.last[g.id];
-          // 收藏卡風格：左上能力值、中間大圖示、下方名牌與技能類型
+          // 遊戲卡：圖示、名稱、學習類型與熟練度
           return h('button', 'gcard' + (off ? ' off' : '') + (isNew ? ' new' : ''), { onclick: () => { if (off) return A.speak('今天玩得很棒了，明天再來吧！'); A.sfx('tap'); play(g.id); } },
-            h('span', 'gc-rt', { text: isNew ? 'NEW' : pc }), h('span', 'gi', { text: g.icon }), h('span', 'gn', { text: g.name }), h('span', 'gc-cog', { text: g.cog }));
+            h('span', 'gc-rt', { text: isNew ? '新遊戲' : `熟練度 ${pc}%` }), h('span', 'gi', { text: g.icon }), h('span', 'gn', { text: g.name }), h('span', 'gc-cog', { text: g.cog }));
         })));
     }));
-    show(h('div', 'screen home', null, head, isle, over ? h('div', 'banner', { text: `${pet.e} 今天玩得很棒！眼睛休息一下。想安靜看故事或寫字還是可以喔。` }) : board, h('h3', 'free-t', { text: '🏝️ 自由探險' }), cols));
+    // 益智島：五款益智小遊戲，各自有關卡進度
+    const pz = h('section', 'subj s-pz', null, h('h2', null, { html: '🧩 益智島 <small>動動腦</small>' }),
+      h('div', 'gcards', null, Object.values(K.puzzles).map(g => {
+        const s2 = K.pz.st(g.id), stars = Object.values(s2.best).reduce((a, b) => a + b, 0), isNew = !s2.seen;
+        return h('button', 'gcard' + (over ? ' off' : '') + (isNew ? ' new' : ''), { onclick: () => { if (over) return A.speak('今天玩得很棒了，明天再來吧！'); A.sfx('tap'); K.pz.openMap(g.id); } },
+          h('span', 'gc-rt', { text: isNew ? '新遊戲' : `第 ${s2.lv} 關` }), h('span', 'gi', { text: g.icon }), h('span', 'gn', { text: g.name }), h('span', 'gc-cog', { text: stars ? `★ ${stars}` : '益智' }));
+      })));
+    const hero = h('div', 'home-hero', null,
+      h('div', 'hero-copy', null, h('span', 'hero-eyebrow', { text: '小小學習家' }),
+        h('h1', null, { text: `${L.name}，今天一起學習吧！` }),
+        h('p', null, { text: `${pet.name} 正等著陪你探索。` })), isle);
+    show(h('div', 'screen home', null, head, hero, over ? h('div', 'banner', { text: `${pet.e} 今天玩得很棒！眼睛休息一下。想安靜看故事或寫字還是可以喔。` }) : board, h('h2', 'free-t', { text: '選擇遊戲' }), cols, h('h2', 'free-t', { text: '益智島' }), h('div', 'subjs pz-row', null, pz)));
     if (!Object.values(L.days).some(d => d.rounds) && !over) setTimeout(() => coach(document.querySelector('.go-big'), '按這裡開始今天的冒險！'), 900);
     if (!greeted) { greeted = true; A.speak(over ? '今天玩得很棒！讓眼睛休息一下，明天再來吧！' : nx < 0 ? `${L.name}，今天的冒險完成了！` : `嗨，${L.name}！今天的冒險準備好了，按出發吧！`); }
   }
@@ -130,7 +142,7 @@
     };
     show(h('div', 'gs s-' + game.subj, null, h('div', 'gbar', null, h('button', 'ib', { text: '🏠', 'aria-label': '回首頁', onclick: () => { A.sfx('tap'); showHome(); } }), bar, h('div', 'gname', { text: `${game.icon} ${game.name}` }), zyBtn()), root));
     cur = ctx; K.cur = ctx;
-    const intro = h('button', 'intro', null, h('span', 'gi', { text: game.icon }), h('b', null, { text: game.name }), h('span', null, { text: game.desc }), h('small', null, { text: '點一下開始 ▶' }));
+    const intro = h('button', 'intro', null, h('span', 'gi', { text: game.icon }), h('b', null, { text: game.name }), h('span', null, { text: game.desc }), h('small', null, { text: '點這裡開始' }));
     root.append(intro);
     Promise.race([A.speak(game.desc).then(() => new Promise(r => setTimeout(r, 400))), new Promise(r => intro.onclick = r), new Promise(r => setTimeout(r, 5000))]).then(() => {
       if (!ctx.alive) return; A.stop(); intro.remove(); round.start = Date.now();
@@ -426,5 +438,5 @@
     if (!K.store.data.settings.introSeen) setTimeout(() => K.help.intro(), 300); // 第一次開啟：功能介紹蓋屏
     setTimeout(() => K.help.flush(), 3000); // 補送之前沒送出的意見回饋
   });
-  K.shell = { showHome, showProfiles, play, quiz, showParent, showCollection };
+  K.shell = { showHome, showProfiles, play, quiz, showParent, showCollection, show, modal, closeModal, setCur: c => { cur = c; } };
 })();

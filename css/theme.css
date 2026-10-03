@@ -188,3 +188,9 @@ body[data-theme="explorer"] .hud{background:linear-gradient(180deg,rgba(15,23,42
 body[data-theme="explorer"] .isle{background:radial-gradient(2px 2px at 20% 20%,#fff 50%,transparent 51%),radial-gradient(2px 2px at 70% 12%,#fff 50%,transparent 51%),radial-gradient(2px 2px at 45% 30%,#fff 50%,transparent 51%),linear-gradient(#0f172a 0,#1e3a8a 56%,#1e40af 56%,#172554 100%)}
 body[data-theme="explorer"] .isle-land{background:radial-gradient(ellipse at 50% 32%,#94a3b8 0,#64748b 50%,#475569 60%,#cbd5e1 61%);box-shadow:0 14px 0 #334155,0 22px 24px rgba(0,0,0,.3)}
 body[data-theme="explorer"] .subj{background:#fff}
+
+/* 翻牌卡：長單字自動縮小，不會超出卡片 */
+.mcard{container-type:inline-size;overflow:hidden}
+.mc-b{font-size:min(1em,calc(var(--fit,40) * 1cqi));line-height:1.15;max-width:100%;overflow-wrap:anywhere}
+.mc-b .enw.sm,.mc-b .zhc,.mc-b .zhs{font-size:1em}
+.mgrid.wide .mcard{aspect-ratio:1.6/1;max-height:none}

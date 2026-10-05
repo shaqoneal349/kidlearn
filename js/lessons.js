@@ -64,7 +64,7 @@
         h('div', 'ls-body', null, h('b', 'ls-title' + (u.en ? ' enw' : ' zy'), { text: u.title }), h('small', null, { text: u.sub }),
           h('div', 'ls-acts', null, u.acts.map(([key, ic, name, fn]) => h('button', 'ls-act' + (st[key] ? ' ok' : '') + (isNext && !st[key] && !u.acts.slice(0, u.acts.findIndex(a => a[0] === key)).some(a => !st[a[0]]) ? ' go' : ''), { onclick: () => { A.sfx('tap'); fn(); } }, h('span', null, { text: st[key] ? '✅' : ic }), h('small', null, { text: name }))))));
     }));
-    S().show(h('div', 'screen lessons ls-' + k, null,
+    S().show(h('div', 'screen lessons lstrack-' + k, null,
       h('div', 'lib-head', null, S().btn('🏠 回小島', '', S().showHome), h('h1', null, { text: '📚 學習步道' })),
       tabs, h('p', 'sub', { text: k === 'zy' ? '先「認識」注音，再唸兒歌，最後玩遊戲。三個都完成就得到一顆星！' : k === 'abc' ? '每一課：認識字母 → 唸韻文 → 玩遊戲。後面還有短母音拼讀。' : '看數字、數一數、餵小熊，學會 0 到 20，再數到 100。' }), path));
     const go = document.querySelector('.ls-act.go');

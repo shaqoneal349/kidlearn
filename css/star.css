@@ -349,3 +349,15 @@ body.rm .choices.stag .opt{animation:none}
 .gr-car{animation:bobf 2s ease-in-out infinite}
 @keyframes bobf{0%,100%{transform:scaleX(-1)}50%{transform:scaleX(-1) translateY(-6px)}}
 @media (max-width:480px){.hud-pill.p-star{display:none}}
+/* 置中的畫面內容變長時（例如結算＋回顧）：子元素不要被壓扁，改用 auto margin 置中，才不會頂端被切掉而捲不回去 */
+.screen.center{justify-content:flex-start}
+.screen.center>*{flex-shrink:0}
+.screen.center>:first-child{margin-top:auto}.screen.center>:last-child{margin-bottom:auto}
+.rv-screen>:first-child{margin-top:0}
+/* 回顧頁底部固定的按鈕列 */
+.rv-foot{position:sticky;bottom:-40px;margin:0 -16px -40px;padding:10px 16px calc(10px + env(safe-area-inset-bottom));width:calc(100% + 32px);display:flex;gap:10px;justify-content:center;flex-wrap:wrap;background:linear-gradient(rgba(238,244,255,0),#eef4ff 30%);z-index:5}
+.rv-foot .btn{min-height:56px}
+.gs.reader .gbar{gap:6px}.gs.reader .gname{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.pop-b{width:min(100px,16vw);height:min(100px,16vw);font-size:min(48px,8vw)}
+@media (max-width:480px){.fd-bear{font-size:70px}.fd-plate{min-height:110px;padding:12px 20px}.st-post{min-height:170px}.st-pole{height:40px}.mw-mag{width:60px;height:60px;min-width:60px;font-size:34px}.mw-slot{width:68px;height:68px}.mw-e{font-size:60px}}
+@media (max-width:520px){.ls-unit,.ls-unit.r{margin:0}.ls-acts{flex-wrap:nowrap}.ls-act{min-width:0;flex:1;padding:4px 4px}.ls-num{width:42px;height:42px;font-size:20px}}

@@ -2,7 +2,7 @@
 // 殼層：學習者檔案、冒險島首頁與今日路線、遊戲框架、結算與錯題回顧、複習／魔王／檢定／診斷、我的島、家長專區、更新提示
 (() => {
   const K = KL, h = K.h, A = K.audio, E = K.engine;
-  const VERSION = '4.0.0'; K.VERSION = VERSION;
+  const VERSION = '4.0.1'; K.VERSION = VERSION;
   const app = () => document.getElementById('app'), ov = () => document.getElementById('overlay');
   const SUBJ = { en: { n: '英文', i: '🔤', isle: '英文島' }, ma: { n: '數學', i: '🔢', isle: '數學島' }, zh: { n: '國語', i: '📖', isle: '國語島' } };
   const AV = ['🦊', '🐼', '🐰', '🐯', '🐸', '🦄', '🐵', '🐱', '🧑‍🚀', '🧙', '🦸', '🥷'];
@@ -245,7 +245,11 @@
         game.subj && btn('🔁 再玩一次', '', () => E.overLimit() && !calm(game) ? showHome() : play(game.id, null, opts)),
         opts.back ? btn(opts.back[0], 'pri', opts.back[1]) : btn('🏠 回小島', nx >= 0 ? '' : 'pri', showHome),
         !opts.back && nx >= 0 && !E.overLimit() && btn(`➡️ 下一站：${stopInfo(route[nx]).n}`, 'pri', () => runStop(nx))));
-    show(h('div', 'screen center rv-screen', null, body, reviewList(res.log)));
+    // 回顧很長時，底部固定一列按鈕，捲到哪裡都能回首頁或去下一站
+    const foot = res.log && res.log.length > 0 && h('div', 'rv-foot', null,
+      opts.back ? btn(opts.back[0], 'pri', opts.back[1]) : btn('🏠 回小島', nx >= 0 ? '' : 'pri', showHome),
+      !opts.back && nx >= 0 && !E.overLimit() && btn(`➡️ ${stopInfo(route[nx]).n}`, 'pri', () => runStop(nx)));
+    show(h('div', 'screen center rv-screen', null, body, reviewList(res.log), foot));
     A.sfx('win');
     setTimeout(() => A.speak(`${st === 3 ? '太厲害了！' : '做得很好！'}` + (res.fixed ? `你有${res.fixed}題自己改對了，這樣最棒！` : '') + (res.skills.length ? `今天你練習了${res.skills[0]}。` : '') + (res.mastered.length ? `你精熟了${res.mastered[0]}！` : '') + (res.sticker ? '小島多了一個新裝飾！' : '')), 700);
     if (Date.now() - lastBreak > 15 * 60000) {
@@ -331,7 +335,7 @@
         const by = {}; round.answers.forEach(a => { const s = K.skill[a.sid].subj, b = by[s] || (by[s] = [0, 0]); b[1]++; if (a.ok) b[0]++; });
         const r = round.answers.filter(a => a.ok).length;
         L.tests.push({ d: today, r, n: round.answers.length, by, g: L.grade }); K.store.save();
-        show(h('div', 'screen center rv-screen', null, h('div', 'result', null, h('h1', null, { text: '小檢定完成！' }), h('p', 'r-score', { text: `答對 ${r} / ${round.answers.length} 題` }), h('p', null, { text: '結果已記錄在家長專區。' }), h('div', 'row', null, round.log.length > 0 && btn(`📖 回顧這一場（${round.log.length} 題）`, '', () => document.getElementById('rv').scrollIntoView({ behavior: 'smooth' })), btn('回家長專區', 'pri', showParent))), reviewList(round.log)));
+        show(h('div', 'screen center rv-screen', null, h('div', 'result', null, h('h1', null, { text: '小檢定完成！' }), h('p', 'r-score', { text: `答對 ${r} / ${round.answers.length} 題` }), h('p', null, { text: '結果已記錄在家長專區。' }), h('div', 'row', null, round.log.length > 0 && btn(`📖 回顧這一場（${round.log.length} 題）`, '', () => document.getElementById('rv').scrollIntoView({ behavior: 'smooth' })), btn('回家長專區', 'pri', showParent))), reviewList(round.log), round.log.length > 0 && h('div', 'rv-foot', null, btn('👪 回家長專區', 'pri', showParent))));
       }
     })();
   }

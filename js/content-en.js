@@ -9,6 +9,8 @@
     return `<i class="sw" style="background:${m[1]}"><b>${m[2] || ''}</b></i>`;
   };
   const face = K.face = it => it.e ? `<span class="em">${em(it)}</span>` : `<span class="zhw">${it.zh}</span>`;
+  // 圖＋中文小字：只有圖時小朋友常看不出是什麼（例如 🙋、⚠️），聽力選圖的選項一律附上中文
+  const faceL = K.faceL = it => it.e ? `<span class="em">${em(it)}</span><small class="cap">${it.zh}</small>` : `<span class="zhw">${it.zh}</span>`;
   const enw = w => `<span class="enw">${w}</span>`;
 
   // ---------- 字母 ----------
@@ -189,7 +191,7 @@
   M.vocab = (s, n, mode) => {
     const it = K.pi(s), pool = s.data.filter(x => x !== it && x.zh !== it.zh && x.e !== it.e || (x !== it && !x.e && !it.e && x.zh !== it.zh));
     const m = s.g <= 1 ? 'listen' : (mode || K.pick(['listen', 'read', 'zh']));
-    if (m === 'listen') return K.mkq({ prompt: '🔊', say: it.w, lang: 'en-US', ask: '聽一聽，選出對的', item: it, hint: `它的中文意思是「${it.zh}」`, novoice: `<span class="enw sm">${it.w}</span>` }, face(it), pool.map(face), n);
+    if (m === 'listen') return K.mkq({ prompt: '🔊', say: it.w, lang: 'en-US', ask: '聽一聽，選出對的', item: it, hint: `它的中文意思是「${it.zh}」`, novoice: `<span class="enw sm">${it.w}</span>` }, faceL(it), pool.map(faceL), n);
     if (m === 'zh' || !it.e) return K.mkq({ prompt: `<span class="zhs">${it.zh}</span>`, ask: '它的英文是？', say: s.g <= 2 ? it.zh : '', item: it, hint: `開頭的字母是 ${it.w[0].toUpperCase()}` }, enw(it.w), pool.map(x => enw(x.w)), n);
     return K.mkq({ prompt: face(it), ask: '它的英文是？', item: it, hint: `它的中文是「${it.zh}」，開頭字母是 ${it.w[0].toUpperCase()}` }, enw(it.w), pool.map(x => enw(x.w)), n);
   };

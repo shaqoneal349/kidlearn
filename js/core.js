@@ -416,6 +416,10 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {}, cur: null 
       }
       t.score = E.mastery(t, skill); t.m = E.stage(skill.id) === 3;
       round.answers.push({ sid: skill.id, ok, ms, probe: !!probe });
+      // 回合回顧：記下每一題的題目、正確答案與孩子的選擇，結束後給孩子再看一次
+      const q = info.q || {};
+      round.log.push({ sid: skill.id, ok, hint: !!info.hint, fixed: !!info.fixed, ask: q.ask || '', prompt: q.prompt && q.prompt !== '🔊' ? q.prompt : '', say: q.say || '', lang: q.lang || '', audio: q.audio || '',
+        want: info.want || '', got: info.got || '', wantH: info.wantH || '', gotH: info.gotH || '', why: q.why || (!ok ? q.hint || skill.demo || '' : '') });
       if (!ok) round.wrongs.push({ sid: skill.id, want: info.want || '', got: info.got || '', prompt: info.q ? K.strip(info.q.ask || '') + ' ' + K.strip(info.q.prompt || info.q.say || '') : '', why: (info.q && info.q.why) || skill.why || skill.demo || '' });
       if (info.fixed) { round.fixed++; L.bonus.fix++; }
       if (info.ev) { round.ev++; L.bonus.ev++; }
@@ -429,9 +433,9 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {}, cur: null 
       if (round.cw[skill.id] >= 2 || round.fast >= 2) { round.cw[skill.id] = 0; round.fast = 0; return true; } // 連錯或亂猜 → 示範卡
       return false;
     },
-    newRound() { return { answers: [], wrongs: [], cw: {}, pre: {}, fixed: 0, ev: 0, start: Date.now(), retry: null, used: {} }; },
+    newRound() { return { answers: [], log: [], wrongs: [], cw: {}, pre: {}, fixed: 0, ev: 0, start: Date.now(), retry: null, used: {} }; },
     endRound(game, round) {
-      const L = E.L(), today = K.today(), res = { n: 0, r: 0, skills: [], mastered: [], grew: [], up: null, down: null, gradeUp: false, sticker: null, fixed: round.fixed, ev: round.ev, wrongs: round.wrongs };
+      const L = E.L(), today = K.today(), res = { n: 0, r: 0, skills: [], mastered: [], grew: [], up: null, down: null, gradeUp: false, sticker: null, fixed: round.fixed, ev: round.ev, wrongs: round.wrongs, log: round.log };
       const by = {};
       for (const a of round.answers) { if (a.probe) continue; const b = by[a.sid] || (by[a.sid] = { n: 0, r: 0 }); b.n++; if (a.ok) b.r++; res.n++; if (a.ok) res.r++; }
       for (const sid in by) {
@@ -529,10 +533,10 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {}, cur: null 
     const showHint = () => { if (o.onHint) o.onHint(); K.ui.hint(hintText(), !q.say && !q.audio); const ht = document.querySelector('.hint-toast'); if (ht) ht.classList.toggle('nozy', secret(q)); if (q.say || q.audio) setTimeout(() => K.sayQ(q, { slow: .75, noAsk: true }), 300); };
     const finish = ok => {
       done = true; q._help = null; if (o.lock) o.lock();
-      const out = () => { K.ui.hint(null); res({ ok: ok && !tries && !helped, fixed: ok && (tries > 0 || helped), hint: tries > 0 || helped, ms: Date.now() - t0, want: strip(q.opts[q.ans]), got: got == null ? '' : strip(q.opts[got]), q }); };
+      const out = () => { K.ui.hint(null); res({ ok: ok && !tries && !helped, fixed: ok && (tries > 0 || helped), hint: tries > 0 || helped, ms: Date.now() - t0, want: strip(q.opts[q.ans]), got: got == null ? '' : strip(q.opts[got]), wantH: q.opts[q.ans], gotH: got == null ? '' : q.opts[got], q }); };
       // 答錯：留著說明，等孩子看完按「下一步」再繼續
       if (!ok && !o.single) { const why = q.why || ''; K.ui.hint(`正確答案是「${strip(q.opts[q.ans])}」。${why}`, true); const t = document.querySelector('.hint-toast'); if (t) { t.append(h('button', 'btn pri next', { text: '我知道了，下一題 →', onclick: () => { A.sfx('tap'); A.stop(); out(); } })); return; } }
-      setTimeout(() => { K.ui.hint(null); res({ ok: ok && !tries && !helped, fixed: ok && (tries > 0 || helped), hint: tries > 0 || helped, ms: Date.now() - t0, want: strip(q.opts[q.ans]), got: got == null ? '' : strip(q.opts[got]), q }); }, ok ? (o.okWait || 800) : (o.badWait || (q.why ? 2600 : 1900)));
+      setTimeout(() => { K.ui.hint(null); res({ ok: ok && !tries && !helped, fixed: ok && (tries > 0 || helped), hint: tries > 0 || helped, ms: Date.now() - t0, want: strip(q.opts[q.ans]), got: got == null ? '' : strip(q.opts[got]), wantH: q.opts[q.ans], gotH: got == null ? '' : q.opts[got], q }); }, ok ? (o.okWait || 800) : (o.badWait || (q.why ? 2600 : 1900)));
     };
     q._help = () => {
       if (done || helped || o.single) return; helped = true; showHint();
@@ -595,7 +599,7 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {}, cur: null 
         lock = true; const [x, y] = open; open = [];
         if (x.it === y.it) {
           await ctx.wait(450); x.el.classList.add('ok'); y.el.classList.add('ok'); A.sfx('ok'); onPair();
-          await ctx.report(p, (miss[x.it.k] || 0) <= 1, 3000);
+          await ctx.report(p, (miss[x.it.k] || 0) <= 1, 3000, { want: `${strip(x.it.a)} ＝ ${strip(x.it.b)}`, wantH: `${x.it.a} ＝ ${x.it.b}`, q: { ask: '配對', say: x.it.say || '', lang: x.it.lang || '' } });
           lock = false; if (!--left) res();
         } else {
           const partner = cards.find(o => o.it === x.it && o !== x);

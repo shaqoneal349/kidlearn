@@ -4,6 +4,8 @@
   const K = KL, h = K.h, A = K.audio;
   const enw = (w, c = '') => `<span class="enw ${c}">${w}</span>`;
 
+  // 氣球上的字依長度縮小（cqi＝氣球寬度的 1%），長單字也不會超出氣球；有圖的選項維持原大小
+  const fit = o => { if (/class="(em|sw)/.test(o)) return 40; const t = K.strip(o); return Math.min(40, (/[㐀-鿿]/.test(t) ? 75 : 165) / Math.max(1, [...t].length)).toFixed(1); };
   K.games.e1 = {
     id: 'e1', subj: 'en', name: '字母音氣球', icon: '🎈', cog: '辨識', kinds: ['letter', 'lsound', 'vocab', 'phon', 'sight'], n: 8,
     desc: '聽聲音，點破正確的氣球！',
@@ -14,7 +16,8 @@
       for (let i = 0; i < ctx.total && ctx.alive; i++) {
         const p = ctx.pick(), q = K.mcq(p.skill, { n: Math.min(6, ctx.nOpts + (ctx.grade > 3 ? 1 : 0)), mode: 'listen' });
         top.replaceChildren(K.ui.prompt(q)); sky.replaceChildren(); delete sky.dataset.lock; K.sayQ(q);
-        const els = q.opts.map((o, j) => h('button', 'balloon c' + j % 6, { html: `<span>${o}</span>`, style: `left:${(j + .5) / q.opts.length * 100}%;animation-duration:${dur + j % 3}s;animation-delay:-${(dur * (.3 + Math.random() * .25)).toFixed(1)}s` }));
+        const wide = q.opts.some(o => !/class="(em|sw)/.test(o) && K.strip(o).length > 6); // 有長單字時氣球變寬
+        const els = q.opts.map((o, j) => h('button', 'balloon c' + j % 6 + (wide ? ' wide' : ''), { html: `<span style="--fit:${fit(o)}">${o}</span>`, style: `left:${(j + .5) / q.opts.length * 100}%;animation-duration:${dur + j % 3}s;animation-delay:-${(dur * (.3 + Math.random() * .25)).toFixed(1)}s` }));
         sky.append(...els);
         const r = await K.ui.multi(q, els, { right: 'pop', wrong: 'wrong', reveal: 'glow', lock: () => sky.dataset.lock = 1, okWait: 700 });
         cb = r.ok ? cb + 1 : 0; combo.textContent = cb >= 2 ? `🔥 連續答對 ${cb}！` : '';

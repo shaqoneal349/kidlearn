@@ -22,7 +22,7 @@
         if (pick._it === it) {
           board.dataset.lock = 1; pick.classList.remove('on'); pick.classList.add('done'); b.classList.add('done'); A.sfx('ok'); onPair && onPair();
           const ok = !miss[it.k]; pick = null;
-          await ctx.report(p, ok, Date.now() - t0, { hint: !ok, fixed: !ok });
+          await ctx.report(p, ok, Date.now() - t0, { hint: !ok, fixed: !ok, want: `${K.strip(it.a)} ＝ ${K.strip(it.b)}`, wantH: `${it.a} ＝ ${it.b}`, q: { ask: '連連看', say: it.say || '' } });
           delete board.dataset.lock;
           if (!--left) { await ctx.wait(500); res(); }
         } else {
@@ -80,7 +80,7 @@
           { key: 'fin', label: '韻母', choices: opts(want.fin, allFins, NEAR[want.fin] || (want.fin === NONE ? K.pick(K.FINALS) : null), 4) },
           { key: 'tone', label: '聲調', choices: want.tone === '˙' ? ['ˉ', 'ˊ', 'ˋ', '˙'] : ['ˉ', 'ˊ', 'ˇ', 'ˋ'] }
         ];
-        const sel = {}, t0 = Date.now(); let tries = 0;
+        const sel = {}, t0 = Date.now(); let tries = 0, firstTry = null;
         const say = () => A.speak(`${it.c}。${it.w}的${it.c}。`, 'zh-TW', { q: true });
         top.replaceChildren(h('div', 'q-box', null, h('div', 'q-ask', { text: '這個字怎麼拼？依序選出聲母、韻母、聲調' }),
           h('div', 'q-row', null, h('div', 'q-main', null, h('span', 'zhc', { text: it.c }), h('small', 'zb-w', { text: it.w })), h('button', 'q-snd', { text: '🔊', 'aria-label': '再聽一次', onclick: say }))));
@@ -99,7 +99,7 @@
           if (go.disabled || work.dataset.lock) return;
           const bad = steps.filter(s => sel[s.key] !== want[s.key]);
           if (!bad.length) { work.dataset.lock = 1; cars.classList.add('ok'); A.sfx(tries ? 'star' : 'ok'); setTimeout(() => res(true), 1100); return; }
-          tries++; A.sfx('bad'); shake(cars);
+          tries++; A.sfx('bad'); shake(cars); if (tries === 1) firstTry = steps.map(st2 => sel[st2.key]); // 記下第一次拼的，給回顧用
           bad.forEach(s => cars.querySelector(`[data-k="${s.key}"]`).classList.add('bad'));
           if (tries === 1) { // 第一次錯：指出哪一節錯了，再聽一次
             K.ui.hint(`${bad.map(s => s.label).join('、')}不對喔，再聽一次「${it.c}」。`); setTimeout(say, 400);
@@ -112,7 +112,7 @@
         });
         K.ui.hint(null); delete work.dataset.lock;
         if (!ctx.alive) return;
-        await ctx.report(p, ok && tries === 0, Date.now() - t0, { hint: tries > 0, fixed: ok && tries > 0, want: it.z, got: ok ? '' : steps.map(s => sel[s.key]).join('') });
+        await ctx.report(p, ok && tries === 0, Date.now() - t0, { hint: tries > 0, fixed: ok && tries > 0, want: it.z, got: firstTry ? firstTry.map(v => v === 'ˉ' || v === NONE ? '' : v).join('') : '', q: { ask: '這個字怎麼拼？', prompt: `<span class="zhc">${it.c}</span> <small>${it.w}</small>`, say: `${it.c}。${it.w}的${it.c}。` } });
       }
       ctx.done();
     }

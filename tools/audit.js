@@ -4,7 +4,7 @@ const root = path.join(__dirname, '..');
 const sandbox = { console, Math, Date, JSON, Set, Map, Array, Object, String, Number, RegExp, Promise, navigator: {}, localStorage: { getItem: () => null, setItem() { } }, document: null, speechSynthesis: undefined };
 sandbox.window = sandbox; sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
-for (const f of ['core.js', 'data-en.js', 'data-zh-chars.js', 'content-en.js', 'content-ma.js', 'content-zh.js', 'content-zh2.js', 'content-plus.js', 'games-en.js', 'games-ma.js', 'games-zh.js', 'games-plus.js', 'games-more.js']) vm.runInContext(fs.readFileSync(path.join(root, 'js', f), 'utf8'), sandbox, { filename: f });
+for (const f of ['core.js', 'data-en.js', 'data-zh-chars.js', 'content-en.js', 'content-ma.js', 'content-zh.js', 'content-zh2.js', 'content-plus.js', 'content-star.js', 'content-books.js', 'games-en.js', 'games-ma.js', 'games-zh.js', 'games-star.js', 'games-plus.js', 'games-more.js']) vm.runInContext(fs.readFileSync(path.join(root, 'js', f), 'utf8'), sandbox, { filename: f });
 const K = sandbox.KL, N = +(process.argv[2] || 200);
 K.store.data = { settings: {}, learners: [] };
 const L = K.store.newLearner('audit', '🦊', 1);

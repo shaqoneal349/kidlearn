@@ -2,7 +2,7 @@
 // 殼層：學習者檔案、冒險島首頁與今日路線、遊戲框架、結算與錯題回顧、複習／魔王／檢定／診斷、我的島、家長專區、更新提示
 (() => {
   const K = KL, h = K.h, A = K.audio, E = K.engine;
-  const VERSION = '3.5.0'; K.VERSION = VERSION;
+  const VERSION = '4.0.0'; K.VERSION = VERSION;
   const app = () => document.getElementById('app'), ov = () => document.getElementById('overlay');
   const SUBJ = { en: { n: '英文', i: '🔤', isle: '英文島' }, ma: { n: '數學', i: '🔢', isle: '數學島' }, zh: { n: '國語', i: '📖', isle: '國語島' } };
   const AV = ['🦊', '🐼', '🐰', '🐯', '🐸', '🦄', '🐵', '🐱', '🧑‍🚀', '🧙', '🦸', '🥷'];
@@ -75,13 +75,17 @@
     const pill = (icon, n, label, cls) => h('span', 'hud-pill ' + cls, { title: label }, h('i', null, { text: icon }), h('b', null, { text: n }), h('small', null, { text: label }));
     const head = h('div', 'hm-head hud', null,
       h('button', 'hm-me', { onclick: () => { A.sfx('tap'); showProfiles(); } }, h('span', 'pf-av sm', { text: L.avatar }), h('span', 'hm-id', null, h('b', null, { text: L.name }), h('small', null, { text: `${pet.e} ${pet.name}` }))),
-      h('div', 'hud-pills', null, pill('🗓️', wk, '這週天數', 'p-day'), pill('🎖️', L.stickers.length, '收藏', 'p-stk'), pill('⭐', E.masteredCount(), '精熟技能', 'p-star')),
+      h('div', 'hud-pills', null, pill('🗓️', wk, '這週天數', 'p-day'), pill('🎖️', L.stickers.length, '收藏', 'p-stk'), pill('⭐', E.masteredCount(), '精熟技能', 'p-star'), pill('🪙', L.coins || 0, '金幣', 'p-coin')),
       h('button', 'hm-pet', { onclick: () => { A.sfx('tap'); showCollection(); } }, h('span', null, { text: ex ? '🧭' : '🗺️' }), h('small', null, { text: ex ? '基地' : '我的島' })),
       h('button', 'ib', { text: '👪', 'aria-label': '家長專區', onclick: () => { A.sfx('tap'); parentGate(); } }));
     // 我的小島：裝飾擺在固定的格位，不會疊在一起
     const SLOTS = [[6, 40], [18, 22], [30, 46], [42, 18], [58, 44], [70, 20], [82, 40], [92, 24], [12, 60], [26, 68], [40, 62], [62, 66], [76, 60], [88, 68], [50, 72], [4, 76]];
     const decos = L.stickers.slice(-SLOTS.length), isle = h('button', 'isle' + (ex ? ' ex' : ''), { onclick: () => { A.sfx('tap'); showCollection(); } }, h('div', 'isle-land'), h('span', 'isle-tree', { text: ex ? '🏕️' : '🌴', style: 'left:20%' }), h('span', 'isle-tree', { text: ex ? '🔭' : '🌳', style: 'right:20%;font-size:34px' }), h('span', 'isle-pet', { text: pet.e }));
     decos.forEach((d, i) => isle.append(h('span', 'isle-d', { text: d, style: `left:${SLOTS[i][0]}%;bottom:${SLOTS[i][1] - 10}%;font-size:${22 + (i % 3) * 4}px` })));
+    // 季節換皮：天空飄著當季的小圖示，左上角掛季節牌
+    const sea = K.season();
+    sea.deco.forEach((d, i) => isle.append(h('span', 'isle-sea', { text: d, style: `left:${8 + i * 24}%;animation-delay:${i * .7}s` })));
+    isle.append(h('span', 'isle-tag', { text: `${sea.dot} ${sea.n}` }));
     const path = h('div', 'route', null, route.map((st, i) => {
       const inf = stopInfo(st), state = st.done ? 'done' : i === nx ? 'next' : 'later';
       return h('button', 'stop ' + state + (st.s ? ' s-' + st.s : ''), { onclick: () => { if (state === 'done') return; if (over && !(st.k === 'review' || (st.k === 'game' && calm(K.games[st.id])))) return A.speak('今天玩得很棒了，明天再來吧！'); A.sfx('tap'); runStop(i); } },
@@ -94,7 +98,7 @@
       return h('section', 'subj s-' + s, null,
         h('h2', null, { html: `${SUBJ[s].i} ${SUBJ[s].isle} <small>${GN[L.gs[s]]}</small> <span class="st">${stars(L.sub[s])}</span>` }),
         h('div', 'isl-bar', null, h('i', null, { style: `width:${mine.length ? solid / mine.length * 100 : 0}%` })),
-        h('div', 'gcards', null, Object.values(K.games).filter(g => g.subj === s).map(g => {
+        h('div', 'gcards', null, Object.values(K.games).filter(g => g.subj === s && !g.hidden).map(g => {
           const off = over && !calm(g), pc = gamePct(g, L), isNew = !L.last[g.id];
           // 收藏卡風格：左上能力值、中間大圖示、下方名牌與技能類型
           return h('button', 'gcard' + (off ? ' off' : '') + (isNew ? ' new' : ''), { onclick: () => { if (off) return A.speak('今天玩得很棒了，明天再來吧！'); A.sfx('tap'); play(g.id); } },
@@ -108,40 +112,76 @@
         return h('button', 'gcard' + (over ? ' off' : '') + (isNew ? ' new' : ''), { onclick: () => { if (over) return A.speak('今天玩得很棒了，明天再來吧！'); A.sfx('tap'); K.pz.openMap(g.id); } },
           h('span', 'gc-rt', { text: isNew ? 'NEW' : `第${s2.lv}關` }), h('span', 'gi', { text: g.icon }), h('span', 'gn', { text: g.name }), h('span', 'gc-cog', { text: stars ? `★ ${stars}` : '益智' }));
       })));
-    show(h('div', 'screen home', null, head, isle, over ? h('div', 'banner', { text: `${pet.e} 今天玩得很棒！眼睛休息一下。想安靜看故事或寫字還是可以喔。` }) : board, h('h3', 'free-t', { text: '🏝️ 自由探險' }), cols, h('div', 'subjs pz-row', null, pz)));
+    // 三個入口（參考 Starfall 的「書＋遊戲＋影片」與年齡分層）：學習步道（引導認識）、故事屋（點讀書）、賽車車庫（高年級的元遊戲）
+    const portal = (cls, icon, name, sub, fn, off) => h('button', 'portal ' + cls + (off ? ' off' : ''), { onclick: () => { if (off) return A.speak('今天玩得很棒了，明天再來吧！'); A.sfx('tap'); fn(); } }, h('span', 'pt-i', { text: icon }), h('span', 'pt-n', null, h('b', null, { text: name }), h('small', null, { text: sub })));
+    const portals = h('div', 'portals', null,
+      K.lessons && portal('p-ls', '📚', '學習步道', '注音・ABC・數字 一步一步學', () => K.lessons.open(), over),
+      K.books && portal('p-bk', '📖', '故事屋', `${K.books.count()} 本會說話的書`, () => K.books.open(), false),
+      K.garage && portal('p-gr', '🏎️', '賽車車庫', `🪙 ${L.coins || 0}　答題賺金幣、升級賽車`, () => K.garage.open(), over));
+    show(h('div', 'screen home', null, head, isle, over ? h('div', 'banner', { text: `${pet.e} 今天玩得很棒！眼睛休息一下。想安靜看故事或寫字還是可以喔。` }) : board, portals, h('h3', 'free-t', { text: '🏝️ 自由探險' }), cols, h('div', 'subjs pz-row', null, pz)));
     if (!Object.values(L.days).some(d => d.rounds) && !over) setTimeout(() => coach(document.querySelector('.go-big'), '按這裡開始今天的冒險！'), 900);
     if (!greeted) { greeted = true; A.speak(over ? '今天玩得很棒！讓眼睛休息一下，明天再來吧！' : nx < 0 ? `${L.name}，今天的冒險完成了！` : `嗨，${L.name}！今天的冒險準備好了，按出發吧！`); }
   }
 
   // ---------- 遊戲框架 ----------
-  function play(id, stop) {
+  // 進度圓點（Starfall：3–10 顆，答一題亮一顆，圖示依季節換）；題數多的遊戲仍用進度條
+  function progressUI(n) {
+    if (n > 10) { const fill = h('i'), el = h('div', 'pbar', null, fill); return { el, set: f => fill.style.width = Math.min(100, f * 100) + '%' }; }
+    const dot = K.season().dot, ds = Array.from({ length: n }, () => h('i', 'pd')), el = h('div', 'pdots', null, ds);
+    return { el, set: f => { const k = Math.round(Math.min(1, f) * n); ds.forEach((d, i) => { const on = i < k; if (on && !d.classList.contains('on')) { d.textContent = dot; d.classList.add('on'); } else if (!on && d.classList.contains('on')) { d.textContent = ''; d.classList.remove('on'); } }); } };
+  }
+  // 閒置提示的小手（Starfall 的「指向手」）：一段時間沒操作，就指向該點的地方；遊戲用 .idle-target 標記目標，否則指喇叭
+  function idleWatch(root, ms) {
+    let t = null, n = 0, last = null;
+    const fire = () => {
+      if (!root.isConnected) return;
+      const tg = [...root.querySelectorAll('.idle-target')].find(x => x.offsetParent) || root.querySelector('.q-snd');
+      if (tg !== last) { last = tg; n = 0; }
+      if (tg && n < 2 && !document.querySelector('.modal-bg,.hint-toast .next')) { n++; coach(tg, tg.dataset.tip || (tg.classList.contains('q-snd') ? '聽不清楚？按這裡再聽一次' : '點這裡')); }
+      t = setTimeout(fire, ms * 1.6);
+    };
+    const reset = () => { clearTimeout(t); t = setTimeout(fire, ms); };
+    root.addEventListener('pointerdown', reset, true); reset();
+    return () => { clearTimeout(t); root.removeEventListener('pointerdown', reset, true); };
+  }
+  // 難度燈號：Lv ●●○（星等由系統依表現決定，只是給孩子看的回饋）
+  const lvLights = n => h('span', 'lv', { title: '難度由系統依表現自動調整' }, h('b', null, { text: 'Lv' }), [1, 2, 3].map(i => h('i', i <= n ? 'on' : '')));
+  // opts.focus：只出這些知識點（學習步道用）；opts.onDone(res)：結束時回呼；opts.back：返回按鈕 [文字, 函式]
+  function play(id, stop, opts = {}) {
     const game = K.games[id], L = E.L();
     const round = E.newRound(), exits = [];
-    const fill = h('i'), bar = h('div', 'pbar', null, fill), root = h('div', 'groot g-' + id);
+    const prog = progressUI(game.n), root = h('div', 'groot g-' + id);
     const ctx = {
-      game, L, grade: L.gs[game.subj], alive: true, total: game.n, nOpts: L.gs[game.subj] <= 1 ? 3 : 4, note: '', used: round.used,
-      pick: () => E.pick(game, round),
+      game, L, grade: L.gs[game.subj], alive: true, total: game.n, nOpts: L.gs[game.subj] <= 1 ? 3 : 4, note: '', used: round.used, hard: false, focus: opts.focus, data: opts.data,
+      pick: () => opts.focus && !round.retry ? { skill: K.skill[K.pick(opts.focus)] } : E.pick(game, round),
       wait: ms => new Promise(r => setTimeout(() => ctx.alive && r(), ms)),
       onExit: f => exits.push(f),
-      progress(i, n) { ctx._manual = true; fill.style.width = Math.min(100, i / n * 100) + '%'; },
+      progress(i, n) { ctx._manual = true; prog.set(i / n); },
       async report(p, ok, ms, info) {
         const demo = E.report(game, round, p.skill, ok, ms, p.probe, info);
-        if (!ctx._manual) fill.style.width = Math.min(100, round.answers.length / ctx.total * 100) + '%';
+        if (!ctx._manual) prog.set(round.answers.length / ctx.total);
         if (demo && ctx.alive) await demoCard(p.skill);
       },
-      done() { if (!ctx.alive) return; ctx.exit(true); if (stop != null) { E.route()[stop].done = true; K.store.save(); } showResult(game, E.endRound(game, round), ctx.note); },
+      done() { if (!ctx.alive) return; ctx.exit(true); if (stop != null) { E.route()[stop].done = true; K.store.save(); } const res = E.endRound(game, round); if (opts.onDone) opts.onDone(res); showResult(game, res, ctx.note, opts); },
       exit(finished) {
         ctx.alive = false; exits.forEach(f => f()); cur = null; K.cur = null;
         if (!finished) { E.day().sec += Math.min(600, Math.round((Date.now() - round.start) / 1000)); K.store.save(); }
       }
     };
-    show(h('div', 'gs s-' + game.subj, null, h('div', 'gbar', null, h('button', 'ib', { text: '🏠', 'aria-label': '回首頁', onclick: () => { A.sfx('tap'); showHome(); } }), bar, h('div', 'gname', { text: `${game.icon} ${game.name}` }), zyBtn()), root));
+    const leave = () => { A.sfx('tap'); if (opts.back) { show(h('div')); opts.back[1](); } else showHome(); };
+    show(h('div', 'gs s-' + game.subj, null, h('div', 'gbar', null, h('button', 'ib', { text: opts.back ? '↩️' : '🏠', 'aria-label': '離開', onclick: leave }), prog.el, h('div', 'gname', null, h('span', 'gn-t', { text: `${game.icon} ${game.name}` }), lvLights(L.sub[game.subj])), zyBtn()), root));
     cur = ctx; K.cur = ctx;
-    const intro = h('button', 'intro', null, h('span', 'gi', { text: game.icon }), h('b', null, { text: game.name }), h('span', null, { text: game.desc }), h('small', null, { text: '點一下開始 ▶' }));
+    // 開場：大大的 ▶（取得手勢才能播音）＋「挑戰難一點」（Starfall 的 Make it Hard：多一個選項、更常出下一級的題目、不出提示小手）
+    let manual = false;
+    const hardB = h('span', 'hard-tog', { role: 'button', text: '💪 挑戰難一點', onclick: e => { e.stopPropagation(); manual = true; ctx.hard = round.hard = !ctx.hard; hardB.classList.toggle('on', ctx.hard); hardB.textContent = ctx.hard ? '💪 挑戰模式：開' : '💪 挑戰難一點'; A.sfx(ctx.hard ? 'star' : 'tap'); } });
+    const intro = h('button', 'intro', null, h('span', 'gi', { text: game.icon }), h('b', null, { text: game.name }), h('span', null, { text: game.desc }), h('small', 'play-big', { text: '▶ 開始' }), opts.focus ? null : hardB);
     root.append(intro);
-    Promise.race([A.speak(game.desc).then(() => new Promise(r => setTimeout(r, 400))), new Promise(r => intro.onclick = r), new Promise(r => setTimeout(r, 5000))]).then(() => {
+    const auto = new Promise(r => { A.speak(game.desc).then(() => setTimeout(() => !manual && r(), 400)); setTimeout(() => !manual && r(), 5000); });
+    Promise.race([auto, new Promise(r => intro.onclick = r)]).then(() => {
       if (!ctx.alive) return; A.stop(); intro.remove(); round.start = Date.now();
+      if (ctx.hard) { ctx.nOpts = Math.min(5, ctx.nOpts + 1); root.classList.add('hard'); }
       game.start(root, ctx).catch(e => console.error(e));
+      if (!ctx.hard) exits.push(idleWatch(root, L.gs[game.subj] <= 2 ? 7000 : 10000));
       if (!L.last[game.id]) setTimeout(() => ctx.alive && coach(root.querySelector('.q-snd'), '聽不清楚，按這裡再聽一次'), 1500); // 第一次玩這款：指一下喇叭
     });
   }
@@ -185,10 +225,10 @@
     return h('section', 'rv', { id: 'rv' }, h('div', 'rv-head', null, h('h2', null, { text: '📖 這一場的回顧' }), tog),
       h('p', 'sub', { text: wrongN ? '看一看正確答案，按 🔊 再聽一次，下次就記住了！' : '全部都會了！再看一次加深印象。' }), list);
   }
-  function showResult(game, res, note) {
+  function showResult(game, res, note, opts = {}) {
     const acc = res.n ? res.r / res.n : 0, st = acc >= .9 ? 3 : acc >= .7 ? 2 : 1, route = E.route(), nx = nextStop();
     const body = h('div', 'result', null, h('div', 'r-stars', { text: stars(st) }), h('h1', null, { text: st === 3 ? '太厲害了！' : st === 2 ? '做得很好！' : '完成了！繼續加油！' }),
-      h('p', 'r-score', { text: `自己答對 ${res.r} / ${res.n} 題` }), note && h('p', 'r-note', { text: note }),
+      res.n > 0 && h('p', 'r-score', { text: `自己答對 ${res.r} / ${res.n} 題` }), note && h('p', 'r-note', { text: note }),
       res.fixed > 0 && h('p', 'r-good', { text: `💪 有 ${res.fixed} 題看了提示後自己改對了！` }),
       res.ev > 0 && h('p', 'r-good', { text: `🔎 找到 ${res.ev} 個證據！` }),
       res.skills.length && h('p', null, { text: '今天練習了：' + K.uniq(res.skills).slice(0, 4).join('、') }),
@@ -197,12 +237,14 @@
       res.up && h('p', 'r-good', { text: `⭐ ${SUBJ[game.subj].n}升級到 ${res.up} 顆星！` }),
       res.gradeUp && h('p', 'r-good', { text: `🚀 ${SUBJ[game.subj].isle}開放了新的區域！` }),
       res.sticker && h('p', 'r-sticker', null, '🎁 小島多了新裝飾 ', h('span', 'big-st', { text: res.sticker })),
+      res.hard && h('p', 'r-good', { text: '💪 挑戰模式完成！金幣加倍' }),
+      res.coins > 0 && h('p', 'r-coin', { text: `🪙 +${res.coins}（共 ${E.L().coins || 0} 枚，可以到賽車車庫升級）` }),
       nx < 0 && route.some(s => s.done) && E.day().rounds <= route.length + 1 && h('p', 'r-note', { text: '🎉 今天的冒險全部完成了！' }),
       h('div', 'row', null,
         res.log && res.log.length > 0 && btn(`📖 回顧這一場（${res.log.length} 題）`, '', () => document.getElementById('rv').scrollIntoView({ behavior: 'smooth' })),
-        game.subj && btn('🔁 再玩一次', '', () => E.overLimit() && !calm(game) ? showHome() : play(game.id)),
-        btn('🏠 回小島', nx >= 0 ? '' : 'pri', showHome),
-        nx >= 0 && !E.overLimit() && btn(`➡️ 下一站：${stopInfo(route[nx]).n}`, 'pri', () => runStop(nx))));
+        game.subj && btn('🔁 再玩一次', '', () => E.overLimit() && !calm(game) ? showHome() : play(game.id, null, opts)),
+        opts.back ? btn(opts.back[0], 'pri', opts.back[1]) : btn('🏠 回小島', nx >= 0 ? '' : 'pri', showHome),
+        !opts.back && nx >= 0 && !E.overLimit() && btn(`➡️ 下一站：${stopInfo(route[nx]).n}`, 'pri', () => runStop(nx))));
     show(h('div', 'screen center rv-screen', null, body, reviewList(res.log)));
     A.sfx('win');
     setTimeout(() => A.speak(`${st === 3 ? '太厲害了！' : '做得很好！'}` + (res.fixed ? `你有${res.fixed}題自己改對了，這樣最棒！` : '') + (res.skills.length ? `今天你練習了${res.skills[0]}。` : '') + (res.mastered.length ? `你精熟了${res.mastered[0]}！` : '') + (res.sticker ? '小島多了一個新裝飾！' : '')), 700);
@@ -432,14 +474,22 @@
         btn('列印報告', '', () => window.print())),
       h('div', 'frow', null, btn('刪除這位小朋友', 'danger', () => { if (confirm(`確定刪除「${L.name}」的所有紀錄嗎？無法復原。`)) { D.learners = D.learners.filter(x => x !== L); D.current = null; K.store.save(); showProfiles(); } })));
     const about = h('div', 'card', null, h('h3', null, { text: '📲 安裝與更新' }), h('p', 'sub', { html: 'iPhone／iPad：用 Safari 開啟 → 分享按鈕 → 「加入主畫面」。<br>Android：用 Chrome 開啟 → 選單 → 「安裝應用程式」或「加到主畫面」。<br>安裝後可離線使用；有新版本時畫面下方會出現更新提示。' }),
-      h('div', 'frow', null, btn('檢查更新', '', async () => { if (swReg) { await swReg.update(); toast('已檢查，有新版本時會出現提示'); } else toast('目前不是安裝版'); }), h('span', 'sub', { text: `版本 ${VERSION}｜知識點 ${K.skills.length} 個｜遊戲 ${Object.keys(K.games).length} 款` })),
+      h('div', 'frow', null, btn('檢查更新', '', async () => { if (swReg) { await swReg.update(); toast('已檢查，有新版本時會出現提示'); } else toast('目前不是安裝版'); }), h('span', 'sub', { text: `版本 ${VERSION}｜知識點 ${K.skills.length} 個｜遊戲 ${Object.values(K.games).filter(g => !g.hidden).length} 款` })),
       h('p', 'sub', { html: '素材來源：注音音檔 © 2017 教育部《國語注音符號手冊》開放部件（CC BY 4.0）；筆順 Hanzi Writer（MIT）與 Make Me a Hanzi；字型 LXGW WenKai TC、Andika（SIL OFL）；英文字彙依教育部「國民中小學英語基本字詞」。' }));
     const help = h('div', 'card', null, h('h3', null, { text: '📖 使用說明' }), h('p', 'sub', { text: '家長端與小朋友端的操作教學、常見問題。' }),
       h('div', 'frow two', null, btn('📖 使用手冊', 'soft', () => K.help.manual()), btn('🎪 重看介紹', 'soft', () => K.help.intro())));
     const fb = h('div', 'card', null, h('h3', null, { text: '💬 意見回饋' }), h('p', 'sub', { text: '用起來哪裡卡卡的、哪題有錯、想要什麼功能，都告訴我。你的建議會直接影響下一版怎麼做。' }),
       btn('我有話想說 💬', 'pri wide', () => K.help.feedback()));
     // 分頁：報告／技能地圖／設定／資料
-    const TABS = [['report', '報告', [usage, trend, weak, tests]], ['map', '技能地圖', [heat]], ['set', '設定', [help, fb, set, voiceCard()]], ['data', '資料', [backup, about]]];
+    // 內容：學習步道與故事屋的進度、所有遊戲的文字總覽（Starfall 的 Accessible Version：家長不用玩也能看懂內容）
+    const books = L.books || {}, lp = K.lessons ? K.lessons.progress() : [];
+    const content = h('div', 'card', null, h('h3', null, { text: '📚 學習步道與故事屋' }),
+      h('ul', null, null, lp.map(t => h('li', null, { text: `${t.n}：完成 ${t.done} / ${t.all} 課（每課＝認識＋小書＋遊戲）` }))),
+      h('p', null, { text: `故事屋：讀過 ${Object.keys(books).length} / ${(K.BOOKS || []).length} 本` + (Object.keys(books).length ? '　' + Object.keys(books).map(id => { const b = K.BOOKS.find(x => x.id === id); return b ? `《${b.title}》${'★'.repeat(books[id].best)}` : ''; }).join('、') : '') }),
+      h('p', 'sub', { text: `賽車車庫：金幣 ${L.coins || 0} 枚` + (L.car ? `，比賽 ${L.car.races} 場` : '') + '。金幣只用來升級遊戲裡的賽車，沒有任何付費內容。' }));
+    const catalog = h('div', 'card', null, h('h3', null, { text: '🎮 全部遊戲一覽' }), h('p', 'sub', { text: '每款遊戲練習的能力與玩法。同一個知識點會出現在好幾款遊戲裡，用不同方式反覆練習。' }),
+      Object.keys(SUBJ).map(s => h('div', null, null, h('h4', null, { text: `${SUBJ[s].i} ${SUBJ[s].n}` }), h('ul', 'cat-list', null, Object.values(K.games).filter(g => g.subj === s && !g.hidden).map(g => h('li', null, { text: `${g.icon} ${g.name}（${g.cog}）：${g.desc}` }))))));
+    const TABS = [['report', '報告', [usage, trend, weak, tests]], ['map', '技能地圖', [heat]], ['content', '內容', [content, catalog]], ['set', '設定', [help, fb, set, voiceCard()]], ['data', '資料', [backup, about]]];
     const body = h('div', 'pt-body'), tabs = h('div', 'pt-tabs');
     const paint = () => { tabs.replaceChildren(...TABS.map(([k, t]) => h('button', k === pTab ? 'on' : '', { text: t, onclick: () => { pTab = k; paint(); } }))); body.replaceChildren(...TABS.find(x => x[0] === pTab)[2]); app().querySelector('.parent') && (app().querySelector('.parent').scrollTop = 0); };
     show(h('div', 'screen parent', null, h('div', 'pt-head', null, h('div', 'pt-top', null, h('h1', null, { text: '👪 家長專區' }), h('button', 'pt-back', { text: '返回小孩端', onclick: () => { A.sfx('tap'); showHome(); } })), tabs), body));
@@ -461,5 +511,5 @@
     if (!K.store.data.settings.introSeen) setTimeout(() => K.help.intro(), 300); // 第一次開啟：功能介紹蓋屏
     setTimeout(() => K.help.flush(), 3000); // 補送之前沒送出的意見回饋
   });
-  K.shell = { showHome, showProfiles, play, quiz, showParent, showCollection, show, modal, closeModal, setCur: c => { cur = c; } };
+  K.shell = { showHome, showProfiles, play, quiz, showParent, showCollection, show, modal, closeModal, btn, coach, idleWatch, zyBtn, lvLights, progressUI, demoCard, toast, SUBJ, GN, setCur: c => { cur = c; } };
 })();

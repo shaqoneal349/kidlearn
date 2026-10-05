@@ -391,7 +391,7 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {}, cur: null 
       const L = E.L();
       if (round.retry) { const s = round.retry; round.retry = null; return { skill: s }; }
       const { all, list } = E.candidates(game);
-      if (Math.random() < .08) { const pr = all.filter(s => s.g === L.gs[s.subj] && s.sub === L.sub[s.subj] + 1); if (pr.length) return { skill: K.pick(pr), probe: true }; }
+      if (Math.random() < (round.hard ? .35 : .08)) { const pr = all.filter(s => s.g === L.gs[s.subj] && s.sub === L.sub[s.subj] + 1); if (pr.length) return { skill: K.pick(pr), probe: true }; }
       return { skill: E.wpick(list, L, round) };
     },
     // 回報一次作答。ok＝第一次、沒用提示就答對；info: {hint, fixed, want, got, ev, q}
@@ -407,6 +407,7 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {}, cur: null 
       push(t.rec, ok ? 1 : 0, 10); push(t.hint, info.hint ? 1 : 0, 10);
       if (game.app) push(t.ap, ok ? 1 : 0, 6);
       if (ok && ms > 0) push(t.ms, ms, 6);
+      if (ok && !probe) { const c = round.hard ? 2 : 1; L.coins = (L.coins || 0) + c; round.coins = (round.coins || 0) + c; } // 金幣：給賽車車庫用
       if (!ok && info.want && info.got) { // 錯誤型態
         let key = `把「${info.want}」選成「${info.got}」`;
         const a = +info.want, b = +info.got;
@@ -435,7 +436,7 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {}, cur: null 
     },
     newRound() { return { answers: [], log: [], wrongs: [], cw: {}, pre: {}, fixed: 0, ev: 0, start: Date.now(), retry: null, used: {} }; },
     endRound(game, round) {
-      const L = E.L(), today = K.today(), res = { n: 0, r: 0, skills: [], mastered: [], grew: [], up: null, down: null, gradeUp: false, sticker: null, fixed: round.fixed, ev: round.ev, wrongs: round.wrongs, log: round.log };
+      const L = E.L(), today = K.today(), res = { coins: round.coins || 0, hard: !!round.hard, n: 0, r: 0, skills: [], mastered: [], grew: [], up: null, down: null, gradeUp: false, sticker: null, fixed: round.fixed, ev: round.ev, wrongs: round.wrongs, log: round.log };
       const by = {};
       for (const a of round.answers) { if (a.probe) continue; const b = by[a.sid] || (by[a.sid] = { n: 0, r: 0 }); b.n++; if (a.ok) b.r++; res.n++; if (a.ok) res.r++; }
       for (const sid in by) {
@@ -502,8 +503,118 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {}, cur: null 
   K.PETS = [[0, '🥚', '神祕的蛋'], [3, '🐣', '破殼寶寶'], [8, '🐥', '小小雞'], [16, '🦕', '小恐龍'], [30, '🐉', '學習神龍']];
   K.pet = () => { const n = E.masteredCount(); let p = K.PETS[0]; for (const x of K.PETS) if (n >= x[0]) p = x; return { e: p[1], name: p[2], n, next: (K.PETS[K.PETS.indexOf(p) + 1] || [null])[0] }; };
 
+  // ---------- 季節換皮（參考 Starfall：同一遊戲依日期換主題，內容不變、新鮮感更新）----------
+  // 農曆節日用對照表（2026–2030）；其餘依月份
+  const LUNAR = { cny: { 2026: '02-17', 2027: '02-06', 2028: '01-26', 2029: '02-13', 2030: '02-03' }, moon: { 2026: '09-25', 2027: '09-15', 2028: '10-03', 2029: '09-22', 2030: '09-12' }, boat: { 2026: '06-19', 2027: '06-09', 2028: '05-28', 2029: '06-16', 2030: '06-05' } };
+  K.LUNAR = LUNAR;
+  K.season = (d = new Date()) => {
+    const y = d.getFullYear(), md = K.dstr(d).slice(5), m = d.getMonth() + 1;
+    const near = (s, a, b) => { if (!s) return false; const diff = (new Date(K.dstr(d) + 'T12:00:00') - new Date(`${y}-${s}T12:00:00`)) / 864e5; return diff >= -a && diff <= b; };
+    if (near(LUNAR.cny[y], 10, 15)) return { k: 'cny', n: '新年快樂', dot: '🧧', deco: ['🏮', '🧧', '🐉', '🎆', '🍊'] };
+    if (near(LUNAR.moon[y], 7, 5)) return { k: 'moon', n: '中秋節快樂', dot: '🥮', deco: ['🌕', '🐰', '🥮', '🏮'] };
+    if (near(LUNAR.boat[y], 5, 2)) return { k: 'boat', n: '端午節', dot: '🍙', deco: ['🐉', '🚣', '🍙', '🌿'] };
+    if (md >= '10-15' && md <= '10-31') return { k: 'hall', n: '萬聖節', dot: '🎃', deco: ['🎃', '🦇', '👻', '🍬'] };
+    if (md >= '12-10' && md <= '12-31') return { k: 'xmas', n: '聖誕節', dot: '🎁', deco: ['🎄', '⛄', '🎁', '🔔'] };
+    if (m >= 3 && m <= 5) return { k: 'spring', n: '春天', dot: '🌸', deco: ['🌸', '🌷', '🦋', '🐝'] };
+    if (m >= 6 && m <= 8) return { k: 'summer', n: '夏天', dot: '🍉', deco: ['🍉', '🌞', '🐚', '🏖️'] };
+    if (m >= 9 && m <= 11) return { k: 'autumn', n: '秋天', dot: '🍁', deco: ['🍁', '🍂', '🌰', '🍄'] };
+    return { k: 'winter', n: '冬天', dot: '❄️', deco: ['❄️', '⛄', '🧣', '☃️'] };
+  };
+
   // ---------- 共用 UI 元件 ----------
   const h = K.h, strip = K.strip;
+  // 星光粒子：答對時從物件中心噴出（參考 Starfall 的 sparkles）
+  K.fx = {
+    burst(el, n = 8) {
+      if (!el || !el.isConnected || !K.store.data.settings.motion) return;
+      const r = el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      for (let i = 0; i < n; i++) {
+        const a = Math.PI * 2 * i / n + Math.random() * .4, d = 50 + Math.random() * 50;
+        const s = h('span', 'spark', { text: K.pick(['✨', '⭐', '🌟', '✦']), style: `left:${cx}px;top:${cy}px;--dx:${(Math.cos(a) * d).toFixed(0)}px;--dy:${(Math.sin(a) * d).toFixed(0)}px` });
+        document.body.append(s); setTimeout(() => s.remove(), 800);
+      }
+    }
+  };
+  // 注音拼讀卡：符號一個一個亮起並播放教育部音檔，最後唸出整個字（Starfall 的「拼讀卡」中文版）
+  K.ui.spellCard = (z, c, w) => {
+    const sp = K.zySplit(z), card = h('div', 'spell nozy', null,
+      h('div', 'sp-syms', null, sp.syms.map(s => h('b', 'zy', { text: s })), sp.tone !== 'ˉ' && h('b', 'zy tn', { text: sp.tone })),
+      h('span', 'sp-eq', { text: '→' }), h('span', 'sp-all zy', { text: z.replace('ˉ', '') }), c && h('span', 'sp-c zhc', { text: c }), w && h('small', 'sp-w', { text: w }));
+    card.play = async () => {
+      const bs = card.querySelectorAll('.sp-syms b');
+      for (let i = 0; i < sp.syms.length; i++) {
+        bs.forEach(b => b.classList.remove('on')); bs[i].classList.add('on');
+        const f = K.BPMF_FILE && K.BPMF_FILE[sp.syms[i]];
+        if (!(f && await Promise.race([A.playFile(f), new Promise(r => setTimeout(() => r(true), 900))]))) await A.speak(K.BPMF_SAY[sp.syms[i]] || sp.syms[i], 'zh-TW', { q: true });
+      }
+      bs.forEach(b => b.classList.add('on')); card.classList.add('all');
+      if (c) await A.speak(w && w !== c ? `${c}。${w}的${c}` : c, 'zh-TW', { q: true });
+    };
+    return card;
+  };
+  // 拖曳（也支援點一下）：放到目標上由 onDrop 決定對錯，錯了彈回原位
+  K.ui.drag = (el, o) => {
+    let sx, sy, ghost = null, moved = false;
+    const at = (x, y) => (o.targets() || []).find(t => { const r = t.getBoundingClientRect(); return x >= r.left - 12 && x <= r.right + 12 && y >= r.top - 12 && y <= r.bottom + 12; });
+    el.addEventListener('pointerdown', e => {
+      if (el.dataset.off) return;
+      sx = e.clientX; sy = e.clientY; moved = false;
+      const mv = ev => {
+        const dx = ev.clientX - sx, dy = ev.clientY - sy;
+        if (!moved && Math.hypot(dx, dy) < 10) return;
+        if (!moved) { moved = true; const r = el.getBoundingClientRect(); ghost = el.cloneNode(true); ghost.classList.add('drag-ghost'); ghost.style.cssText = `left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px`; document.body.append(ghost); el.classList.add('dragging'); }
+        ghost.style.transform = `translate(${dx}px,${dy}px) scale(1.08)`;
+        (o.targets() || []).forEach(t => t.classList.toggle('over', t === at(ev.clientX, ev.clientY)));
+      };
+      const up = ev => {
+        document.removeEventListener('pointermove', mv); document.removeEventListener('pointerup', up); document.removeEventListener('pointercancel', up);
+        (o.targets() || []).forEach(t => t.classList.remove('over'));
+        if (!moved) { o.onTap && o.onTap(); return; }
+        const t = at(ev.clientX, ev.clientY), ok = t ? o.onDrop(t) : false;
+        el.classList.remove('dragging');
+        if (ok || !ghost) { if (ghost) ghost.remove(); return; }
+        ghost.style.transition = 'transform .3s'; ghost.style.transform = 'translate(0,0)'; setTimeout(() => ghost.remove(), 320); // 彈回
+      };
+      document.addEventListener('pointermove', mv); document.addEventListener('pointerup', up); document.addEventListener('pointercancel', up);
+    });
+  };
+  // 整句語音化：答對後把答案說成完整的一句話（「3 + 5 = 8」「天上有白雲。」「ㄇ、ㄚ → ㄇㄚ 媽」）
+  // 回傳 { text, say, lang, zy:{z,c,w} }，沒有合適的句子就回傳 null
+  K.fullOf = q => {
+    if (q.full === false) return null;
+    if (q.full) return typeof q.full === 'string' ? { text: q.full, say: q.full } : q.full;
+    const s = q.skill, it = q.item, want = strip(q.opts[q.ans]);
+    if (!s) return null;
+    const fillBlank = t => String(t).replace(/□|＿+|_{2,}|❓/, want);
+    switch (s.kind) {
+      case 'arith': { const t = strip(it.text); if (/[文題]|，|？/.test(t) && !/[□]/.test(t)) return { text: `答案是 ${want}`, say: `答案是${want}` }; const x = /□/.test(t) ? t.replace('□', want) : `${t} = ${want}`; return { text: x, say: x }; }
+      case 'count': return { text: `一共有 ${want} 個`, say: `一共有${want}個` };
+      case 'compare': return { text: `${/大/.test(q.ask) ? '最大' : '最小'}的是 ${want}`, say: `${/大/.test(q.ask) ? '最大' : '最小'}的是${want}` };
+      case 'syl': case 'char': return it && it.z ? { zy: { z: it.z, c: it.c, w: it.w } } : null;
+      case 'tone': { if (!it || !it.z) return null; const tn = want.replace(/[ˉˊˇˋ˙\s]|（.*?）/g, ''); return { text: `${it.w || it.c}：${tn}`, say: `${it.c}，${tn}` }; }
+      case 'vocab': case 'lsound': case 'phon': case 'sight': return it && it.w ? { text: `${it.w}　${s.kind === 'lsound' ? '' : it.zh}`, say: it.w, lang: 'en-US', then: s.kind === 'lsound' ? '' : it.zh } : null;
+      case 'fill': return it ? { text: it.s.replace(/＿+/, it.a), say: it.s.replace(/＿+/, it.a) } : null;
+      case 'mc': return it && /＿/.test(it.q) ? { text: it.q.replace('＿', it.a), say: it.q.replace('＿', it.a) } : null;
+      case 'cloze': return it ? { text: it.s.replace(/_{2,}/, it.a), say: it.s.replace(/_{2,}/, it.a), lang: 'en-US' } : null;
+      case 'pair': { const p = strip(q.prompt); return { text: `${p} ↔ ${want}`, say: `${p}的${s.rel}詞是${want}` }; }
+      case 'comp': return it ? { text: `${it.p.join('＋')}＝${it.c}`, say: `${it.c}，${it.w}的${it.c}` } : null;
+      case 'zpic': return it ? { text: `${it.e} ${it.w}`, say: it.w } : null;
+      case 'balance': return { text: `□ = ${want}`, say: `答案是${want}` };
+      default: { const p = strip(q.prompt); if (/□|＿|_{2,}/.test(p) && p.length < 40) { const x = fillBlank(p); return { text: x, say: x, lang: /[㐀-鿿]/.test(x) ? 'zh-TW' : 'en-US' }; } return null; }
+    }
+  };
+  // 顯示並唸出整句；低年級等唸完再進下一題（最多 4 秒）
+  K.ui.full = q => {
+    const f = K.fullOf(q), box = document.querySelector('.groot .q-box');
+    if (!f || !box) return Promise.resolve();
+    const low = !K.cur || K.cur.grade == null || K.cur.grade <= 3;
+    const pill = h('div', 'full-say' + (f.zy ? ' nozy' : ''));
+    let p;
+    if (f.zy) { const card = K.ui.spellCard(f.zy.z, f.zy.c, f.zy.w); pill.append(card); p = low ? card.play() : Promise.resolve(); }
+    else { pill.append(h('span', null, { text: '✅ ' }), h('span', f.lang === 'en-US' ? 'enw' : '', { text: f.text })); p = low ? (f.lang === 'en-US' ? A.speak(f.say, 'en-US', { q: true }).then(() => f.then && A.speak(f.then, 'zh-TW', { queue: true })) : A.say(f.say)) : Promise.resolve(); }
+    box.querySelectorAll('.full-say').forEach(x => x.remove()); box.append(pill);
+    return Promise.race([p, new Promise(r => setTimeout(r, 4000))]);
+  };
   // 題目列：指示文字 + 題目（無語音時顯示文字備援）+ 重聽 + 求助
   K.ui.prompt = q => {
     const box = h('div', 'q-box' + (secret(q) ? ' nozy' : ''));
@@ -536,7 +647,9 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {}, cur: null 
       const out = () => { K.ui.hint(null); res({ ok: ok && !tries && !helped, fixed: ok && (tries > 0 || helped), hint: tries > 0 || helped, ms: Date.now() - t0, want: strip(q.opts[q.ans]), got: got == null ? '' : strip(q.opts[got]), wantH: q.opts[q.ans], gotH: got == null ? '' : q.opts[got], q }); };
       // 答錯：留著說明，等孩子看完按「下一步」再繼續
       if (!ok && !o.single) { const why = q.why || ''; K.ui.hint(`正確答案是「${strip(q.opts[q.ans])}」。${why}`, true); const t = document.querySelector('.hint-toast'); if (t) { t.append(h('button', 'btn pri next', { text: '我知道了，下一題 →', onclick: () => { A.sfx('tap'); A.stop(); out(); } })); return; } }
-      setTimeout(() => { K.ui.hint(null); res({ ok: ok && !tries && !helped, fixed: ok && (tries > 0 || helped), hint: tries > 0 || helped, ms: Date.now() - t0, want: strip(q.opts[q.ans]), got: got == null ? '' : strip(q.opts[got]), wantH: q.opts[q.ans], gotH: got == null ? '' : q.opts[got], q }); }, ok ? (o.okWait || 800) : (o.badWait || (q.why ? 2600 : 1900)));
+      const ms = Date.now() - t0, go = () => { K.ui.hint(null); res({ ok: ok && !tries && !helped, fixed: ok && (tries > 0 || helped), hint: tries > 0 || helped, ms, want: strip(q.opts[q.ans]), got: got == null ? '' : strip(q.opts[got]), wantH: q.opts[q.ans], gotH: got == null ? '' : q.opts[got], q }); };
+      if (ok && !o.single && !o.noFull) { const sleep = new Promise(r => setTimeout(r, o.okWait || 800)); Promise.all([K.ui.full(q), sleep]).then(() => setTimeout(go, 250)); return; }
+      setTimeout(go, ok ? (o.okWait || 800) : (o.badWait || (q.why ? 2600 : 1900)));
     };
     q._help = () => {
       if (done || helped || o.single) return; helped = true; showHint();
@@ -544,9 +657,9 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {}, cur: null 
       if (w.length > 1) { const i = K.pick(w); els[i].dataset.x = 1; els[i].classList.add(o.wrong || 'wrong'); }
     };
     els.forEach((el, i) => el.addEventListener('click', () => {
-      if (done || el.dataset.x) return;
+      if (done || el.dataset.x || el.closest('[data-wait]')) return;
       if (o.onPick) o.onPick(el, i);
-      if (i === q.ans) { A.sfx(tries ? 'star' : 'ok'); el.classList.add(o.right || 'right'); return finish(true); }
+      if (i === q.ans) { A.sfx(tries ? 'star' : 'ok'); el.classList.add(o.right || 'right'); K.fx.burst(el); return finish(true); }
       A.sfx('bad'); el.classList.add(o.wrong || 'wrong'); el.dataset.x = 1; if (got == null) got = i;
       if (!tries && two) { tries = 1; showHint(); }
       else { tries = 2; els[q.ans].classList.add(o.reveal || 'right', 'show'); finish(false); }
@@ -555,6 +668,9 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {}, cur: null 
   K.ui.choice = (root, q, o = {}) => {
     const wrap = h('div', 'choices ' + (o.cls || '') + (secret(q) ? ' nozy' : '')), els = q.opts.map(op => { const L = strip(op).length, b = h('button', 'opt' + (L > 18 ? ' xl' : L > 9 ? ' long' : ''), { html: op }); return b; });
     wrap.append(...els); root.append(wrap);
+    // 選項逐一浮出（Starfall：先看題、再看選項，避免一出現就亂點）；低年級慢一點，挑戰模式與關閉動態時不延遲
+    const S = K.store.data.settings, step = !S.motion || o.single || (K.cur && K.cur.hard) ? 0 : K.cur && K.cur.grade <= 2 ? 320 : 140;
+    if (step) { wrap.classList.add('stag'); wrap.style.setProperty('--d', step + 'ms'); els.forEach((b, i) => b.style.setProperty('--i', i)); wrap.dataset.wait = 1; setTimeout(() => delete wrap.dataset.wait, step * els.length + 120); }
     return K.ui.multi(q, els, Object.assign({ lock: () => wrap.dataset.done = 1 }, o));
   };
   // 數字鍵盤輸入（支援小數點與分數）

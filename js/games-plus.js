@@ -149,7 +149,9 @@
       root.append(top, grid);
       for (let b = 0; b < boards && ctx.alive; b++) {
         const p = ctx.pick(), s = p.skill; let items, ask;
-        if (s.kind === 'char') { ask = '把國字和它的注音配成一對'; items = K.sample(s.data.filter((x, i, a) => a.findIndex(y => y.z === x.z) === i), pairsN).map(it => ({ k: it.c, a: `<span class="zhc">${it.c}</span>`, b: `<span class="zy sm">${it.z}</span>`, say: `${it.w}的${it.c}`, sayB: '' })); }
+        // 注音輔助階段（小一、小二的新字）：國字配「有這個字的詞語＋圖」，用詞義認字
+        if (s.kind === 'char' && K.zhScaffold && K.zhScaffold(s)) { ask = '把國字和有它的詞語配成一對'; items = K.sample(s.data.filter((x, i, a) => a.findIndex(y => y.c === x.c || y.w === x.w) === i), pairsN).map(it => ({ k: it.c, a: `<span class="zhc">${it.c}</span>`, b: `<span class="zhs sm">${K.picOf(it) ? K.picOf(it) + ' ' : ''}${it.w.replace(it.c, `<b>${it.c}</b>`)}</span>`, say: `${it.w}的${it.c}`, sayB: it.w })); }
+        else if (s.kind === 'char') { ask = '把國字和它的注音配成一對'; items = K.sample(s.data.filter((x, i, a) => a.findIndex(y => y.z === x.z) === i), pairsN).map(it => ({ k: it.c, a: `<span class="zhc">${it.c}</span>`, b: `<span class="zy sm">${it.z}</span>`, say: `${it.w}的${it.c}`, sayB: '' })); }
         else if (s.kind === 'pair') { ask = `把${s.rel}詞配成一對`; items = K.sample(s.data, pairsN).map(it => ({ k: it[0], a: `<span class="zhc">${it[0]}</span>`, b: `<span class="zhc">${it[1]}</span>`, say: it[0], sayB: it[1] })); }
         else { ask = '把成語和它的意思配成一對'; items = K.sample(s.data, pairsN).map(it => ({ k: it.i, a: `<span class="zhc xs">${it.i}</span>`, b: `<span class="zhs xs">${it.m}</span>`, say: '' })); }
         top.replaceChildren(h('div', 'q-ask', { text: ask })); A.speak(ask);

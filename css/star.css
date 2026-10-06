@@ -361,3 +361,8 @@ body.rm .choices.stag .opt{animation:none}
 .pop-b{width:min(100px,16vw);height:min(100px,16vw);font-size:min(48px,8vw)}
 @media (max-width:480px){.fd-bear{font-size:70px}.fd-plate{min-height:110px;padding:12px 20px}.st-post{min-height:170px}.st-pole{height:40px}.mw-mag{width:60px;height:60px;min-width:60px;font-size:34px}.mw-slot{width:68px;height:68px}.mw-e{font-size:60px}}
 @media (max-width:520px){.ls-unit,.ls-unit.r{margin:0}.ls-acts{flex-wrap:nowrap}.ls-act{min-width:0;flex:1;padding:4px 4px}.ls-num{width:42px;height:42px;font-size:20px}}
+/* 注音輔助識字的選項：國字＋注音＋所在的詞 */
+.zsc{display:inline-flex;flex-direction:column;align-items:center;line-height:1.1}
+.zsc ruby{font-size:1.15em}.zsc rt{font-size:.38em;font-family:system-ui,sans-serif;color:#64748b;letter-spacing:1px}
+.zsc small{font-size:.42em;color:#64748b;font-weight:700;margin-top:2px}
+.zsc rt{font-size:.45em}

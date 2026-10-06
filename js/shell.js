@@ -2,7 +2,7 @@
 // 殼層：學習者檔案、冒險島首頁與今日路線、遊戲框架、結算與錯題回顧、複習／魔王／檢定／診斷、我的島、家長專區、更新提示
 (() => {
   const K = KL, h = K.h, A = K.audio, E = K.engine;
-  const VERSION = '4.0.1'; K.VERSION = VERSION;
+  const VERSION = '4.1.0'; K.VERSION = VERSION;
   const app = () => document.getElementById('app'), ov = () => document.getElementById('overlay');
   const SUBJ = { en: { n: '英文', i: '🔤', isle: '英文島' }, ma: { n: '數學', i: '🔢', isle: '數學島' }, zh: { n: '國語', i: '📖', isle: '國語島' } };
   const AV = ['🦊', '🐼', '🐰', '🐯', '🐸', '🦄', '🐵', '🐱', '🧑‍🚀', '🧙', '🦸', '🥷'];

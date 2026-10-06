@@ -212,4 +212,33 @@
     ㄞ: EX('愛心:❤️ 白菜:🥬 奶奶:👵'), ㄟ: EX('杯子:🥤 飛機:✈️ 黑色:⬛'), ㄠ: EX('小貓:🐱 包子:🥟 小草:🌿'), ㄡ: EX('小狗:🐶 猴子:🐵 小手:✋'),
     ㄢ: EX('高山:⛰️ 雨傘:☂️ 米飯:🍚'), ㄣ: EX('開門:🚪 大人:🧍 森林:🌲'), ㄤ: EX('糖果:🍬 綿羊:🐑 窗戶:🪟'), ㄥ: EX('電燈:💡 颳風:🌬️ 星星:⭐'), ㄦ: EX('耳朵:👂 兒子:👦 兒歌:🎵')
   };
+
+  // ---------- 小一分級（依十二年國教國語文課綱）----------
+  // 課綱：注音符號教學實施於第一學年前十週（首冊沒有國字）；1,000 個常用字是一、二年級兩年的目標；
+  // 「運用注音符號輔助識字」(3-Ⅰ-2)、課文全文附注音；識字順序「高頻到低頻、獨體到合體、具體到抽象」，並「以詞義教導識字」。
+  // ★ 對應前十週：只有注音、拼讀、看圖識詞（有注音）；★★ 才開始認具體、高頻的字；★★★ 才有造詞、選字、排句子、短文。
+  const LV = { 'zh-char-1a': 2, 'zh-char-1b': 2, 'zh-fill-1': 3, 'zh-word-1': 3, 'zh-sent-1': 3, 'zh-read-1': 3 };
+  for (const id in LV) if (K.skill[id]) K.skill[id].sub = LV[id];
+
+  // ---------- 注音輔助識字（逐步撤除）----------
+  // 小一、小二的孩子在某一組國字還是「新手／熟悉」時：選項是「國字＋注音＋所在的詞」，有圖的字再給圖；
+  // 到「穩定」以上就拿掉注音，只看國字；答錯變多、掌握度掉回去，注音又會回來。
+  const PICTO = { 日: '☀️', 月: '🌙', 山: '⛰️', 水: '💧', 火: '🔥', 木: '🌳', 土: '🟫', 田: '🌾', 石: '🪨', 雨: '🌧️', 天: '🌤️', 人: '🧍', 口: '👄', 目: '👁️', 耳: '👂', 手: '✋', 足: '🦶', 牛: '🐮', 羊: '🐑', 馬: '🐴', 魚: '🐟', 鳥: '🐦', 狗: '🐶', 貓: '🐱', 豬: '🐷', 雞: '🐔', 鴨: '🦆', 蟲: '🐛', 兔: '🐰', 花: '🌸', 草: '🌿', 米: '🍚', 刀: '🔪', 門: '🚪', 車: '🚗', 書: '📖', 星: '⭐', 雲: '☁️', 風: '🌬️', 雪: '❄️', 衣: '👕', 心: '❤️', 果: '🍎', 瓜: '🍉', 竹: '🎋', 林: '🌲', 一: '1️⃣', 二: '2️⃣', 三: '3️⃣', 四: '4️⃣', 五: '5️⃣', 六: '6️⃣', 七: '7️⃣', 八: '8️⃣', 九: '9️⃣', 十: '🔟', 上: '⬆️', 下: '⬇️', 左: '⬅️', 右: '➡️', 哭: '😢', 笑: '😄', 吃: '🍽️', 喝: '🥤', 走: '🚶', 跑: '🏃', 坐: '🪑', 看: '👀', 聽: '👂' };
+  const WORD_PIC = {};
+  [...K.ZPIC, ...Object.values(K.ZY_EX).flat()].forEach(x => { if (!WORD_PIC[x.w]) WORD_PIC[x.w] = x.e; });
+  K.picOf = it => PICTO[it.c] || WORD_PIC[it.w] || '';
+  const zyT = z => z.endsWith('˙') ? '˙' + z.slice(0, -1) : z;
+  K.zhScaffold = s => {
+    const L = K.store.cur && K.store.cur();
+    if (!L || s.subj !== 'zh' || s.g > 2 || L.gs.zh > 2) return false;
+    return K.engine.stage(s.id) < 2;
+  };
+  K.zhHelpChar = it => `<span class="zsc"><ruby class="zhc">${it.c}<rt>${zyT(it.z)}</rt></ruby><small>${it.w}</small></span>`;
+  const char0 = M.char;
+  M.char = (s, n, mode) => {
+    if (!K.zhScaffold(s)) return char0(s, n, mode);
+    const it = K.pi(s), pool = s.data.filter(x => x.z !== it.z && x.c !== it.c), pic = K.picOf(it);
+    return K.mkq({ prompt: pic ? `<span class="em">${pic}</span>` : '🔊', say: `${it.c}。${it.w}的${it.c}。`, ask: '聽一聽，是哪一個字？可以看注音喔', item: it, hint: `它的注音是 ${it.z.replace('ˉ', '')}，在「${it.w}」這個詞裡。`, novoice: `<span class="zy">${it.z.replace("ˉ", "")}</span> <span class="zhs">${it.w.replace(it.c, "＿")}</span>`, help: true },
+      K.zhHelpChar(it), pool.map(K.zhHelpChar), Math.min(n, 3));
+  };
 })();

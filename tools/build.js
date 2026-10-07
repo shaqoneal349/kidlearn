@@ -20,9 +20,11 @@ if (fi >= 0) {
   fs.writeFileSync(path.join(root, 'js/art-manifest.js'), `// 由 tools/build.js 產生：assets/ 裡的圖（不含副檔名）\nKL.ART_FILES = ${JSON.stringify(list.sort())};\n`);
   console.log('art', list.length, 'files');
 }
-const SKIP = new Set(['tools', 'docs','.git', 'node_modules', '.claude', 'README.md', 'sw.js', '.gitignore']);
+const SKIP = new Set(['tools', 'docs', '.git', 'node_modules', '.claude', 'README.md', 'sw.js', '.gitignore']);
+// 只收 App 自己的檔案（白名單），專案資料夾裡其他不相干的東西不會被放進離線快取
+const APP = /^(index\.html|manifest\.webmanifest|(css|js|icons|vendor|assets)\/)/;
 const files = [];
-(function walk(dir, rel) { for (const f of fs.readdirSync(dir)) { if (SKIP.has(f) || f.startsWith('.')) continue; const p = path.join(dir, f), r = rel ? rel + '/' + f : f; if (fs.statSync(p).isDirectory()) walk(p, r); else files.push(r); } })(root, '');
+(function walk(dir, rel) { for (const f of fs.readdirSync(dir)) { if (SKIP.has(f) || f.startsWith('.')) continue; const p = path.join(dir, f), r = rel ? rel + '/' + f : f; if (fs.statSync(p).isDirectory()) walk(p, r); else if (APP.test(r)) files.push(r); } })(root, '');
 const hash = crypto.createHash('sha1'); for (const f of files.sort()) hash.update(f).update(fs.readFileSync(path.join(root, f)));
 const ver = hash.digest('hex').slice(0, 10);
 const sw = `// 由 tools/build.js 產生：版本 = 所有檔案內容的雜湊，任何檔案改動都會換新快取

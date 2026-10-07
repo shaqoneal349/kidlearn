@@ -16,6 +16,7 @@ window.KL = { games: {}, skills: [], skill: {}, mcqKinds: {}, ui: {}, cur: null 
     if (cls) e.className = cls;
     if (props) for (const k in props) {
       const v = props[k];
+      if (v == null || v === false) continue; // null／false 就不設這個屬性
       if (k === 'html') e.innerHTML = v;
       else if (k === 'text') e.textContent = v;
       else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);

@@ -2,7 +2,7 @@
 // 殼層：學習者檔案、冒險島首頁與今日路線、遊戲框架、結算與錯題回顧、複習／魔王／檢定／診斷、我的島、家長專區、更新提示
 (() => {
   const K = KL, h = K.h, A = K.audio, E = K.engine;
-  const VERSION = '4.1.0'; K.VERSION = VERSION;
+  const VERSION = '5.0.0'; K.VERSION = VERSION;
   const app = () => document.getElementById('app'), ov = () => document.getElementById('overlay');
   const SUBJ = { en: { n: '英文', i: '🔤', isle: '英文島' }, ma: { n: '數學', i: '🔢', isle: '數學島' }, zh: { n: '國語', i: '📖', isle: '國語島' } };
   const AV = ['🦊', '🐼', '🐰', '🐯', '🐸', '🦄', '🐵', '🐱', '🧑‍🚀', '🧙', '🦸', '🥷'];
@@ -21,6 +21,7 @@
     const S = K.store.data.settings, L = E.L(), b = document.body;
     b.classList.toggle('rm', !S.motion); b.classList.toggle('big', !!S.big); b.dataset.theme = L ? L.theme : 'kid';
     K.zyWatch(); K.zyApply();
+    if (K.artApply) K.artApply();
   }
   // 遊戲畫面右上角的注音開關
   const zyBtn = () => { const b = h('button', 'ib zyb' + (K.zyOn() ? ' on' : ''), { text: 'ㄅ', 'aria-label': '注音開關', onclick: () => { const L = E.L(); L.zy = !L.zy; K.store.save(); b.classList.toggle('on', L.zy); A.sfx('tap'); K.zyApply(); } }); return b; };
@@ -30,7 +31,7 @@
     const D = K.store.data;
     const list = h('div', 'pf-list', null, D.learners.map(L => h('button', 'pf', { onclick: () => { A.sfx('tap'); D.current = L.id; K.store.save(); greeted = false; showHome(); } }, h('span', 'pf-av', { text: L.avatar }), h('span', 'pf-n', { text: L.name }))),
       h('button', 'pf add', { onclick: () => { A.sfx('tap'); addLearner(); } }, h('span', 'pf-av', { text: '➕' }), h('span', 'pf-n', { text: '新增小朋友' })));
-    const scr = h('div', 'screen center', null, h('div', 'logo', { text: '🏝️' }), h('h1', 'title', { text: '小小學習家' }), h('p', 'sub', { text: '英文・數學・國語　學習冒險島' }), h('p', 'sub', { text: D.learners.length ? '誰要來冒險？' : '第一次使用，請爸爸媽媽幫忙建立檔案' }), list,
+    const scr = h('div', 'screen center', null, h('div', 'logo', { text: '🏝️', 'data-char': 'fox-wave' }), h('h1', 'title', { text: '小小學習家' }), h('p', 'sub', { text: '英文・數學・國語　學習冒險島' }), h('p', 'sub', { text: D.learners.length ? '誰要來冒險？' : '第一次使用，請爸爸媽媽幫忙建立檔案' }), list,
       h('p', 'sub tiny', { text: '無廣告・無內購・紀錄只存在這台裝置・有每日時間上限與休息提醒' }));
     if (installEvt) scr.append(btn('📲 安裝到主畫面', 'pri', async () => { installEvt.prompt(); installEvt = null; }));
     show(scr);
@@ -80,7 +81,7 @@
       h('button', 'ib', { text: '👪', 'aria-label': '家長專區', onclick: () => { A.sfx('tap'); parentGate(); } }));
     // 我的小島：裝飾擺在固定的格位，不會疊在一起
     const SLOTS = [[6, 40], [18, 22], [30, 46], [42, 18], [58, 44], [70, 20], [82, 40], [92, 24], [12, 60], [26, 68], [40, 62], [62, 66], [76, 60], [88, 68], [50, 72], [4, 76]];
-    const decos = L.stickers.slice(-SLOTS.length), isle = h('button', 'isle' + (ex ? ' ex' : ''), { onclick: () => { A.sfx('tap'); showCollection(); } }, h('div', 'isle-land'), h('span', 'isle-tree', { text: ex ? '🏕️' : '🌴', style: 'left:20%' }), h('span', 'isle-tree', { text: ex ? '🔭' : '🌳', style: 'right:20%;font-size:34px' }), h('span', 'isle-pet', { text: pet.e }));
+    const decos = L.stickers.slice(-SLOTS.length), isle = h('button', 'isle' + (ex ? ' ex' : ''), { onclick: () => { A.sfx('tap'); showCollection(); } }, h('div', 'isle-land'), h('span', 'isle-tree', { text: ex ? '🏕️' : '🌴', style: 'left:20%' }), h('span', 'isle-tree', { text: ex ? '🔭' : '🌳', style: 'right:20%;font-size:34px' }), h('span', 'isle-pet', { text: pet.e, 'data-pet': K.PETS.findIndex(x => x[1] === pet.e) }));
     decos.forEach((d, i) => isle.append(h('span', 'isle-d', { text: d, style: `left:${SLOTS[i][0]}%;bottom:${SLOTS[i][1] - 10}%;font-size:${22 + (i % 3) * 4}px` })));
     // 季節換皮：天空飄著當季的小圖示，左上角掛季節牌
     const sea = K.season();
@@ -88,7 +89,7 @@
     isle.append(h('span', 'isle-tag', { text: `${sea.dot} ${sea.n}` }));
     const path = h('div', 'route', null, route.map((st, i) => {
       const inf = stopInfo(st), state = st.done ? 'done' : i === nx ? 'next' : 'later';
-      return h('button', 'stop ' + state + (st.s ? ' s-' + st.s : ''), { onclick: () => { if (state === 'done') return; if (over && !(st.k === 'review' || (st.k === 'game' && calm(K.games[st.id])))) return A.speak('今天玩得很棒了，明天再來吧！'); A.sfx('tap'); runStop(i); } },
+      return h('button', 'stop ' + state + (st.s ? ' s-' + st.s : ''), { 'data-g': st.k === 'game' && !st.done ? st.id : null, onclick: () => { if (state === 'done') return; if (over && !(st.k === 'review' || (st.k === 'game' && calm(K.games[st.id])))) return A.speak('今天玩得很棒了，明天再來吧！'); A.sfx('tap'); runStop(i); } },
         h('span', 'stop-i', { text: st.done ? '✅' : inf.i }), h('span', 'stop-n', { text: inf.n }));
     }));
     const board = h('div', 'board', null, h('div', 'bd-t', { text: nx < 0 ? '🎉 今天的冒險完成了！可以自由探險，或是休息一下。' : '🧭 今日冒險：建議照順序走，想先玩哪一站也可以。' }), path,
@@ -96,12 +97,12 @@
     const cols = h('div', 'subjs', null, Object.keys(SUBJ).map(s => {
       const mine = K.skills.filter(k => k.subj === s && k.g === L.gs[s]), solid = mine.filter(k => E.stage(k.id) >= 2).length;
       return h('section', 'subj s-' + s, null,
-        h('h2', null, { html: `${SUBJ[s].i} ${SUBJ[s].isle} <small>${GN[L.gs[s]]}</small> <span class="st">${stars(L.sub[s])}</span>` }),
+        h('h2', null, { html: `<span class="subj-i" data-icon="subj-${s}">${SUBJ[s].i}</span> ${SUBJ[s].isle} <small>${GN[L.gs[s]]}</small> <span class="st">${stars(L.sub[s])}</span>` }),
         h('div', 'isl-bar', null, h('i', null, { style: `width:${mine.length ? solid / mine.length * 100 : 0}%` })),
         h('div', 'gcards', null, Object.values(K.games).filter(g => g.subj === s && !g.hidden).map(g => {
           const off = over && !calm(g), pc = gamePct(g, L), isNew = !L.last[g.id];
           // 收藏卡風格：左上能力值、中間大圖示、下方名牌與技能類型
-          return h('button', 'gcard' + (off ? ' off' : '') + (isNew ? ' new' : ''), { onclick: () => { if (off) return A.speak('今天玩得很棒了，明天再來吧！'); A.sfx('tap'); play(g.id); } },
+          return h('button', 'gcard' + (off ? ' off' : '') + (isNew ? ' new' : ''), { 'data-g': g.id, onclick: () => { if (off) return A.speak('今天玩得很棒了，明天再來吧！'); A.sfx('tap'); play(g.id); } },
             h('span', 'gc-rt', { text: isNew ? 'NEW' : pc }), h('span', 'gi', { text: g.icon }), h('span', 'gn', { text: g.name }), h('span', 'gc-cog', { text: g.cog }));
         })));
     }));
@@ -109,11 +110,11 @@
     const pz = h('section', 'subj s-pz', null, h('h2', null, { html: '🧩 益智島 <small>動動腦</small>' }),
       h('div', 'gcards', null, Object.values(K.puzzles).map(g => {
         const s2 = K.pz.st(g.id), stars = Object.values(s2.best).reduce((a, b) => a + b, 0), isNew = !s2.seen;
-        return h('button', 'gcard' + (over ? ' off' : '') + (isNew ? ' new' : ''), { onclick: () => { if (over) return A.speak('今天玩得很棒了，明天再來吧！'); A.sfx('tap'); K.pz.openMap(g.id); } },
+        return h('button', 'gcard' + (over ? ' off' : '') + (isNew ? ' new' : ''), { 'data-g': 'pz-' + g.id, onclick: () => { if (over) return A.speak('今天玩得很棒了，明天再來吧！'); A.sfx('tap'); K.pz.openMap(g.id); } },
           h('span', 'gc-rt', { text: isNew ? 'NEW' : `第${s2.lv}關` }), h('span', 'gi', { text: g.icon }), h('span', 'gn', { text: g.name }), h('span', 'gc-cog', { text: stars ? `★ ${stars}` : '益智' }));
       })));
     // 三個入口（參考 Starfall 的「書＋遊戲＋影片」與年齡分層）：學習步道（引導認識）、故事屋（點讀書）、賽車車庫（高年級的元遊戲）
-    const portal = (cls, icon, name, sub, fn, off) => h('button', 'portal ' + cls + (off ? ' off' : ''), { onclick: () => { if (off) return A.speak('今天玩得很棒了，明天再來吧！'); A.sfx('tap'); fn(); } }, h('span', 'pt-i', { text: icon }), h('span', 'pt-n', null, h('b', null, { text: name }), h('small', null, { text: sub })));
+    const portal = (cls, icon, name, sub, fn, off) => h('button', 'portal ' + cls + (off ? ' off' : ''), { onclick: () => { if (off) return A.speak('今天玩得很棒了，明天再來吧！'); A.sfx('tap'); fn(); } }, h('span', 'pt-i', { text: icon, 'data-icon': { 'p-ls': 'portal-lessons', 'p-bk': 'portal-library', 'p-gr': 'portal-garage' }[cls] }), h('span', 'pt-n', null, h('b', null, { text: name }), h('small', null, { text: sub })));
     const portals = h('div', 'portals', null,
       K.lessons && portal('p-ls', '📚', '學習步道', '注音・ABC・數字 一步一步學', () => K.lessons.open(), over),
       K.books && portal('p-bk', '📖', '故事屋', `${K.books.count()} 本會說話的書`, () => K.books.open(), false),
@@ -174,7 +175,7 @@
     // 開場：大大的 ▶（取得手勢才能播音）＋「挑戰難一點」（Starfall 的 Make it Hard：多一個選項、更常出下一級的題目、不出提示小手）
     let manual = false;
     const hardB = h('span', 'hard-tog', { role: 'button', text: '💪 挑戰難一點', onclick: e => { e.stopPropagation(); manual = true; ctx.hard = round.hard = !ctx.hard; hardB.classList.toggle('on', ctx.hard); hardB.textContent = ctx.hard ? '💪 挑戰模式：開' : '💪 挑戰難一點'; A.sfx(ctx.hard ? 'star' : 'tap'); } });
-    const intro = h('button', 'intro', null, h('span', 'gi', { text: game.icon }), h('b', null, { text: game.name }), h('span', null, { text: game.desc }), h('small', 'play-big', { text: '▶ 開始' }), opts.focus ? null : hardB);
+    const intro = h('button', 'intro', { 'data-g': game.id }, h('span', 'gi', { text: game.icon }), h('b', null, { text: game.name }), h('span', null, { text: game.desc }), h('small', 'play-big', { text: '▶ 開始' }), opts.focus ? null : hardB);
     root.append(intro);
     const auto = new Promise(r => { A.speak(game.desc).then(() => setTimeout(() => !manual && r(), 400)); setTimeout(() => !manual && r(), 5000); });
     Promise.race([auto, new Promise(r => intro.onclick = r)]).then(() => {
@@ -188,7 +189,7 @@
   function demoCard(skill) {
     return new Promise(res => {
       const text = skill.demo || '慢慢來，仔細看、仔細聽，再試一次就會了！';
-      modal(h('div', 'demo', null, h('div', 'demo-i', { text: '💡' }), h('h2', null, { text: skill.name }), h('p', null, { text }), btn('我知道了 👍', 'pri', () => { A.stop(); closeModal(); res(); })));
+      modal(h('div', 'demo', null, h('div', 'demo-i', { text: '💡', 'data-char': 'fox-think' }), h('h2', null, { text: skill.name }), h('p', null, { text }), btn('我知道了 👍', 'pri', () => { A.stop(); closeModal(); res(); })));
       A.speak('我們一起看一下。' + text);
     });
   }
@@ -227,7 +228,7 @@
   }
   function showResult(game, res, note, opts = {}) {
     const acc = res.n ? res.r / res.n : 0, st = acc >= .9 ? 3 : acc >= .7 ? 2 : 1, route = E.route(), nx = nextStop();
-    const body = h('div', 'result', null, h('div', 'r-stars', { text: stars(st) }), h('h1', null, { text: st === 3 ? '太厲害了！' : st === 2 ? '做得很好！' : '完成了！繼續加油！' }),
+    const body = h('div', 'result', null, h('div', 'r-fox', { 'data-char': st === 3 ? 'fox-trophy' : 'fox-cheer' }), h('div', 'r-stars', { text: stars(st) }), h('h1', null, { text: st === 3 ? '太厲害了！' : st === 2 ? '做得很好！' : '完成了！繼續加油！' }),
       res.n > 0 && h('p', 'r-score', { text: `自己答對 ${res.r} / ${res.n} 題` }), note && h('p', 'r-note', { text: note }),
       res.fixed > 0 && h('p', 'r-good', { text: `💪 有 ${res.fixed} 題看了提示後自己改對了！` }),
       res.ev > 0 && h('p', 'r-good', { text: `🔎 找到 ${res.ev} 個證據！` }),
@@ -254,7 +255,7 @@
     setTimeout(() => A.speak(`${st === 3 ? '太厲害了！' : '做得很好！'}` + (res.fixed ? `你有${res.fixed}題自己改對了，這樣最棒！` : '') + (res.skills.length ? `今天你練習了${res.skills[0]}。` : '') + (res.mastered.length ? `你精熟了${res.mastered[0]}！` : '') + (res.sticker ? '小島多了一個新裝飾！' : '')), 700);
     if (Date.now() - lastBreak > 15 * 60000) {
       lastBreak = Date.now();
-      setTimeout(() => { modal(h('div', 'demo', null, h('div', 'demo-i', { text: K.pet().e + '💤' }), h('h2', null, { text: '我有點累了，一起休息一下吧！' }), h('p', null, { text: '看看遠方、喝口水、動一動身體。' }), btn('好！', 'pri', closeModal))); A.speak('我有點累了，一起休息一下吧！看看遠方，喝口水。'); }, 3500);
+      setTimeout(() => { modal(h('div', 'demo', null, h('div', 'demo-i', { text: K.pet().e + '💤', 'data-char': 'fox-rest' }), h('h2', null, { text: '我有點累了，一起休息一下吧！' }), h('p', null, { text: '看看遠方、喝口水、動一動身體。' }), btn('好！', 'pri', closeModal))); A.speak('我有點累了，一起休息一下吧！看看遠方，喝口水。'); }, 3500);
     }
   }
 
@@ -351,7 +352,7 @@
     const sets = K.STICKER_SETS.map(([name, emo]) => { const all = [...emo.matchAll(/\p{Extended_Pictographic}️?/gu)].map(m => m[0]), own = all.filter(x => L.stickers.includes(x)).length; return h('div', 'card', null, h('h4', null, { text: `${name}　${own} / ${all.length}${own === all.length ? '　🏆 集滿了！' : ''}` }), h('div', 'stickers', null, all.map(x => h('span', L.stickers.includes(x) ? 'on' : '', { text: L.stickers.includes(x) ? x : '❔' })))); });
     show(h('div', 'screen', null,
       h('div', 'hm-head', null, btn('🏠 回小島', '', showHome)),
-      h('div', 'pet-card', null, h('div', 'pet-big', { text: pet.e }), h('h2', null, { text: pet.name }), h('p', null, { text: pet.next ? `已精熟 ${pet.n} 個本領，精熟 ${pet.next} 個就會進化！` : `已精熟 ${pet.n} 個本領，是最強的神龍了！` }), h('div', 'pet-steps', null, K.PETS.map(p => h('span', pet.n >= p[0] ? 'on' : '', { text: p[1] }))),
+      h('div', 'pet-card', null, h('div', 'pet-big', { text: pet.e, 'data-pet': K.PETS.findIndex(x => x[1] === pet.e) }), h('h2', null, { text: pet.name }), h('p', null, { text: pet.next ? `已精熟 ${pet.n} 個本領，精熟 ${pet.next} 個就會進化！` : `已精熟 ${pet.n} 個本領，是最強的神龍了！` }), h('div', 'pet-steps', null, K.PETS.map(p => h('span', pet.n >= p[0] ? 'on' : '', { text: p[1] }))),
         h('p', 'sub', { text: `💪 自己改對 ${L.bonus.fix} 題　🔎 找到證據 ${L.bonus.ev} 次　🔁 完成複習 ${L.bonus.rev} 次` })),
       h('h2', 'sec', { text: ex ? '🧭 能力地圖' : '🗺️ 我的能力地圖' }), h('p', 'sub', { text: '🌱 新手 → 🌿 熟悉 → 🌳 穩定 → ⭐ 精熟（隔天、隔一週都還記得才算精熟）' }), map,
       h('h2', 'sec', { text: `🎁 收藏（${L.stickers.length} / ${K.STICKERS.length}）` }), sets));
@@ -432,7 +433,7 @@
       h('div', 'frow', null, h('span', null, { text: '主題' }), sel([['kid', '小島與寵物（低年級）'], ['explorer', '探險家（高年級）']], L.theme, v => { L.theme = v; applyPrefs(); })),
       h('div', 'frow', null, tog('題目加注音', 'zy', L), tog('自動唸出題目（算式、文字題）', 'autoRead', L)),
       h('p', 'sub', { text: '注音會標在題目和選項上方；考注音、考讀音的題目不會標，以免直接看到答案。遊戲中也可以按右上角的「ㄅ」開關。' }),
-      h('div', 'frow', null, tog('音效', 'sfx'), tog('語音旁白', 'voice'), tog('震動回饋', 'vib'), tog('畫面動態', 'motion'), tog('大字模式', 'big')),
+      h('div', 'frow', null, K.art && K.art.FILES.size > 0 && h('label', 'tog', null, h('input', null, { type: 'checkbox', checked: S.art !== false ? '' : null, onchange: e => { S.art = e.target.checked; K.store.save(); location.reload(); } }), ' 繪本美術（關掉就改回圖示）'), tog('音效', 'sfx'), tog('語音旁白', 'voice'), tog('震動回饋', 'vib'), tog('畫面動態', 'motion'), tog('大字模式', 'big')),
       h('div', 'frow', null, h('span', null, { text: '家長密碼（四位數，留空則用乘法題）' }), h('input', 'inp sm', { type: 'number', inputmode: 'numeric', value: S.pin, placeholder: '例如 1234', onchange: e => { S.pin = /^\d{4}$/.test(e.target.value) ? e.target.value : ''; K.store.save(); } })));
     const week = Array.from({ length: 7 }, (_, i) => K.addDays(today, i - 6)), mins = week.map(d => Math.round(((L.days[d] || {}).sec || 0) / 60)), mx = Math.max(10, ...mins), WD = ['日', '一', '二', '三', '四', '五', '六'];
     const td = E.day(), tskills = K.skills.filter(k => L.skills[k.id] && L.skills[k.id].last === today), kept = K.skills.filter(k => E.stage(k.id) === 3).length;

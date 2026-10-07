@@ -1,0 +1,123 @@
+/* v5 森林繪本美術：只在 body.art（有圖、家長沒關掉）時生效；沒有圖時一切照舊 */
+
+/* ---------- 共用 ---------- */
+img.emo{height:1.2em;width:auto;vertical-align:-.22em;display:inline-block;pointer-events:none;filter:drop-shadow(0 2px 1px rgba(60,30,0,.18))}
+.has-art{background:none!important;box-shadow:none!important}
+.has-art>img{display:block;width:100%;height:100%;object-fit:contain;pointer-events:none}
+body.art{--ink:#4a2e14;background:#fff4dc;color:#4a2e14}
+body.art .title{color:#6b3f17;text-shadow:0 2px 0 #fff}
+body.art h1,body.art h2,body.art h3{color:#5a3412}
+
+/* 木頭與羊皮紙材質 */
+body.art .btn{border:14px solid transparent;border-image:var(--ui-option-card) 64 fill / 14px stretch;background:none;box-shadow:none;color:#5a3412;text-shadow:0 1px 0 #fff;padding:4px 10px}
+body.art .btn:active{transform:translateY(2px);filter:brightness(.96)}
+body.art .btn.pri,body.art .btn.go-big{border:16px solid transparent;border-image:var(--ui-btn-yellow) 60 fill / 16px stretch;background:none;box-shadow:0 6px 10px rgba(90,52,18,.18);color:#5a3412;text-shadow:0 1px 0 rgba(255,255,255,.6);animation:none}
+body.art .btn.pri:active,body.art .btn.go-big:active{border-image-source:var(--ui-btn-yellow-down)}
+body.art .btn.danger{border-image:none;border:2px solid #fecaca;background:#fff}
+body.art .ib{border:none;background:var(--ui-btn-round) center/contain no-repeat;box-shadow:none}
+body.art .ib img.emo{height:.95em}
+
+/* ---------- 開場（選小朋友） ---------- */
+body.art .screen.center:not(.rv-screen){background:linear-gradient(rgba(255,244,220,.15),rgba(255,244,220,.75) 70%),var(--bg-welcome) center/cover}
+body.art .logo.has-art{width:150px;height:150px;animation:bob 2.4s ease-in-out infinite}
+body.art .pf{border:14px solid transparent;border-image:var(--ui-frame-card) 70 fill / 14px stretch;background:none;box-shadow:0 6px 12px rgba(90,52,18,.15)}
+
+/* ---------- 首頁 ---------- */
+body.art .screen.home{background:linear-gradient(180deg,#cfe8b8 0,#f3ead0 380px,#fff4dc 700px)}
+body.art .hud{background:linear-gradient(180deg,rgba(122,77,34,.96),rgba(96,58,24,.94));box-shadow:0 6px 14px rgba(60,30,0,.3)}
+body.art .hud .hm-me{background:linear-gradient(#fff8e6,#f6e6c4);box-shadow:0 4px 0 #5a3412,inset 0 2px 0 #fff}
+body.art .hud-pill{background:#fff8e6;box-shadow:0 3px 0 #4a2e14}
+body.art .hud-pill i{background:none;box-shadow:none}
+body.art .hud-pill i img.emo{height:30px}
+body.art .hud .hm-pet{background:linear-gradient(#fff8e6,#f6e6c4);box-shadow:0 4px 0 #5a3412}
+/* 小島：換成整張繪本插圖 */
+body.art .isle{height:clamp(220px,46vw,380px);background:var(--bg-home-island) center 55%/cover;box-shadow:0 10px 22px rgba(60,30,0,.25),inset 0 0 0 4px rgba(255,248,230,.8)}
+body.art .isle-land,body.art .isle-tree{display:none}
+body.art .isle-pet{bottom:8%;width:clamp(90px,20vw,150px);height:clamp(90px,20vw,150px);font-size:0;filter:drop-shadow(0 8px 6px rgba(0,0,0,.3))}
+body.art .isle-d{opacity:.9}
+body.art .isle-tag{background:rgba(255,248,230,.92);color:#6b3f17}
+/* 今日冒險、三座島：羊皮紙卡＋木牌標題 */
+body.art .board,body.art .subj{background:#fffaf0;border:4px solid #a8743f;box-shadow:0 6px 0 #7a4d22,0 12px 22px rgba(60,30,0,.18)}
+body.art .bd-t{background:linear-gradient(#a8743f,#8b5a2b);color:#fff8e6;text-shadow:0 2px 0 rgba(0,0,0,.25)}
+body.art .subj h2{background:linear-gradient(#a8743f,#8b5a2b)!important;color:#fff8e6}
+body.art .subj-i{display:inline-block;width:1.5em;height:1.5em;vertical-align:-.35em}
+body.art .subj .st{color:#fde68a}
+body.art .stop-i.has-art{width:76px;height:76px;border-radius:50%;overflow:hidden;background:#fff8e6!important;box-shadow:0 4px 0 #a8743f!important}
+body.art .stop-i.has-art img{object-fit:cover;transform:scale(1.15)}
+body.art .stop.done .stop-i{box-shadow:0 4px 0 #15803d}
+body.art .stop-n{background:#f6e6c4;color:#5a3412}
+body.art .stop.next .stop-n{background:#f6c343;color:#4a2e14}
+body.art .btn.go-big{min-height:76px;font-size:26px;color:#5a3412}
+/* 遊戲卡：木框＋插圖 */
+body.art .gcard{background:#fff8e6!important;border:12px solid transparent;border-image:var(--ui-frame-card) 64 fill / 12px stretch;color:#5a3412;box-shadow:0 6px 10px rgba(60,30,0,.18);padding:14px 2px 6px;min-height:150px}
+body.art .gcard::before{display:none}
+body.art .gcard .gi.has-art{width:84px;height:84px;filter:drop-shadow(0 4px 3px rgba(60,30,0,.25))}
+body.art .gcard .gn{color:#4a2e14;text-shadow:0 1px 0 #fff}
+body.art .gc-cog{background:#f6e6c4;color:#6b3f17}
+body.art .gc-rt{color:#8b5a2b;text-shadow:0 1px 0 #fff}
+body.art .gcard.new .gc-rt{background:linear-gradient(#fde68a,#f59e0b);color:#78350f}
+/* 三個入口 */
+body.art .portal{background:#fff8e6!important;border:4px solid #a8743f;color:#5a3412;box-shadow:0 6px 0 #7a4d22,0 10px 18px rgba(60,30,0,.15)}
+body.art .pt-n b{text-shadow:none}
+body.art .pt-i.has-art{width:76px;height:76px}
+body.art .free-t{color:#5a3412}
+
+/* ---------- 遊戲畫面 ---------- */
+body.art .gs.s-zh{background:linear-gradient(rgba(255,246,226,.45),rgba(255,246,226,.62)),var(--bg-game-zh) center/cover}
+body.art .gs.s-ma{background:linear-gradient(rgba(255,246,226,.45),rgba(255,246,226,.62)),var(--bg-game-ma) center/cover}
+body.art .gs.s-en{background:linear-gradient(rgba(255,246,226,.40),rgba(255,246,226,.60)),var(--bg-game-en) center/cover}
+body.art .gs.s-boss{background:linear-gradient(rgba(30,20,10,.15),rgba(30,20,10,.25)),var(--bg-boss) center/cover}
+body.art .gs{position:relative}
+body.art .gbar{background:rgba(255,248,230,.88);box-shadow:0 3px 0 #a8743f}
+body.art .gname{background:#fff8e6;color:#5a3412;box-shadow:0 3px 0 #a8743f}
+body.art .q-ask{background:rgba(255,248,230,.95);color:#4a2e14;box-shadow:0 3px 0 #a8743f}
+body.art .q-snd,body.art .q-help{background:var(--ui-btn-round) center/contain no-repeat!important;box-shadow:none!important;border:0!important}
+body.art .q-snd img.emo,body.art .q-help img.emo{height:1.15em}
+body.art .opt{border:16px solid transparent;border-image:var(--ui-option-card) 64 fill / 16px stretch;background:none;box-shadow:0 6px 10px rgba(60,30,0,.15);color:#3d2610}
+body.art .opt.right{border-image-source:var(--ui-option-right);background:none}
+body.art .opt.wrong{border-image-source:var(--ui-option-wrong);background:none}
+body.art .hint-toast{background:#fff8e6;box-shadow:0 6px 0 #a8743f,0 12px 24px rgba(0,0,0,.15)}
+body.art .pdots .pd{background:rgba(122,77,34,.18)}
+body.art .pbar{background:rgba(122,77,34,.18)}
+body.art .pbar i{background:linear-gradient(#a3d977,#5e8c4a)}
+/* 開場：遊戲插圖 */
+body.art .intro{background:radial-gradient(circle at 50% 40%,rgba(255,248,230,.96),rgba(255,248,230,.86))}
+body.art .intro .gi.has-art{width:190px;height:190px;border-radius:0;filter:drop-shadow(0 10px 8px rgba(60,30,0,.25));animation:bob 2s ease-in-out infinite}
+body.art .intro b{color:#4a2e14}
+body.art .intro small{background:var(--ui-btn-yellow) center/100% 100% no-repeat;color:#5a3412;box-shadow:none}
+/* 小狐夥伴 */
+.mascot{display:none}
+body.art .mascot{display:block;position:absolute;left:4px;bottom:4px;width:clamp(78px,13vw,128px);z-index:4;pointer-events:none;animation:bob 2.6s ease-in-out infinite;filter:drop-shadow(0 6px 4px rgba(0,0,0,.25))}
+body.art .mascot img{width:100%;display:block}
+body.art .mascot.ok,body.art .mascot.star{animation:hop .55s ease-out 2}
+body.art .mascot.win{animation:hop .6s ease-out 3}
+body.art .mascot.bad{animation:sway .5s ease-in-out 2}
+@keyframes hop{40%{transform:translateY(-22px) scale(1.06)}}
+@keyframes sway{25%{transform:rotate(-6deg)}75%{transform:rotate(6deg)}}
+@media (max-width:600px){body.art .mascot{width:70px;opacity:.95}}
+/* 示範卡、休息、結算的小狐 */
+body.art .demo-i.has-art{width:130px;height:130px;margin:0 auto}
+body.art .modal{background:#fff8e6;border:4px solid #a8743f;box-shadow:0 8px 0 #7a4d22,0 20px 40px rgba(0,0,0,.25)}
+body.art .rv-screen{background:linear-gradient(rgba(255,244,220,.25),rgba(255,244,220,.85) 420px),var(--bg-result) center top/cover}
+body.art .result{background:#fff8e6;border:4px solid #a8743f;box-shadow:0 8px 0 #7a4d22,0 16px 40px rgba(60,30,0,.2)}
+body.art .result::before{background:repeating-conic-gradient(rgba(246,195,67,.22) 0 10deg,transparent 10deg 20deg)}
+body.art .r-fox.has-art{width:150px;height:150px;margin:-6px auto 0;animation:bob 2s ease-in-out infinite}
+body.art .r-stars{color:#f6c343;text-shadow:0 3px 0 #b45309}
+/* 魔王 */
+body.art .boss-foe .bf.has-art{width:130px;height:130px;display:inline-block}
+
+/* ---------- 其他畫面的背景 ---------- */
+body.art .screen.library{background:linear-gradient(rgba(255,244,220,.35),rgba(255,244,220,.8) 360px),var(--bg-library) center top/cover}
+body.art .screen.lessons{background:linear-gradient(rgba(255,244,220,.25),rgba(255,244,220,.75) 380px),var(--bg-lessons) center top/cover}
+body.art .screen.garage{background:linear-gradient(rgba(40,24,10,.2),rgba(255,244,220,.9) 520px),var(--bg-garage) center top/cover}
+body.art .garage .lib-head h1{color:#fff8e6;text-shadow:0 2px 4px rgba(0,0,0,.5)}
+body.art .rc-track{background:var(--bg-race-track) center/cover;box-shadow:inset 0 0 0 4px #a8743f}
+body.art .screen.pz-map{background:linear-gradient(rgba(255,244,220,.25),rgba(255,244,220,.8) 400px),var(--bg-puzzle) center top/cover}
+body.art .gs.guide.s-zh,body.art .gs.guide.s-en,body.art .gs.guide.s-ma{background:linear-gradient(rgba(255,246,226,.5),rgba(255,246,226,.7)),var(--bg-lessons) center/cover}
+body.art .shelf,body.art .ls-unit{background:rgba(255,250,240,.96)}
+body.art .pet-big.has-art{width:180px;height:180px;margin:0 auto;font-size:0}
+body.art .groot.boss-sea,body.art .groot.boss-space,body.art .groot.boss-forest{background:transparent;color:inherit}
+body.art .mascot{z-index:1}
+body.art .hunt-scene.park{background:linear-gradient(rgba(255,255,255,.15),rgba(255,255,255,.15)),var(--bg-game-en) center/cover}
+body.art .hunt-scene.room{background:linear-gradient(rgba(255,255,255,.15),rgba(255,255,255,.15)),var(--bg-game-zh) center/cover}
+body.art .hunt-scene.sea{background:linear-gradient(rgba(255,255,255,.1),rgba(255,255,255,.1)),var(--bg-home-island) center/cover}

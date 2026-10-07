@@ -1,0 +1,48 @@
+{
+  "style": "Premium storybook-style mobile game art, painterly digital illustration with soft 3D volume and depth, cozy animated film concept painting, rounded chunky shapes, warm golden afternoon sunlight from the top-left, gentle rim light, soft ambient occlusion and contact shadows. Palette of leaf green, warm wood brown, cream parchment, sunny yellow, berry red.",
+  "negative": "text, letters, Chinese characters, numbers, watermark, signature, flat vector art, flat colors, simple 2D cartoon, thick black outlines, cel shading, line art, plastic toy, photorealism, neon glow, sharp creepy faces, extra limbs",
+  "kinds": {
+    "bg": {
+      "pre": true,
+      "head": "Wide environment scene with strong depth",
+      "tail": "Layered foreground slightly blurred, sharp midground, soft hazy distant background. Central screen uncluttered for game UI, important details away from the edges. Square 1:1.",
+      "no": "text, letters, numbers, watermark, characters, flat 2D vector, thick lines"
+    },
+    "char": {
+      "pre": true,
+      "head": "Single full-body character",
+      "tail": "Fluffy tactile fur texture, big glossy eyes with bright catchlights, warm golden rim light from top-left. Centered, isolated on pure white background, soft contact shadow. Square 1:1.",
+      "no": "text, outlines, flat 2D, cel shading"
+    },
+    "item": {
+      "pre": false,
+      "head": "Single 3D storybook game object",
+      "tail": "Chunky rounded proportions, tactile material detail, 3/4 angle from slightly above, soft volumetric shading and specular highlight, soft contact shadow. Centered, isolated on pure white background. Square 1:1.",
+      "no": "text, flat vector, outlines"
+    },
+    "icon": {
+      "pre": false,
+      "head": "Chunky 3D game icon",
+      "tail": "Rounded bulbous shape, soft glossy ambient reflection, warm rim light from top-left, slight bevel edge, readable at tiny size. Isolated on pure white background, soft drop shadow. Square 1:1.",
+      "no": "text, flat vector"
+    },
+    "card": {
+      "pre": false,
+      "head": "Game menu card illustration: miniature storybook diorama of",
+      "tail": "3/4 perspective, rounded focal composition, soft golden afternoon rim light, soft volumetric light. Isolated on pure white background. Square 1:1.",
+      "no": "text, letters, numbers"
+    },
+    "ui": {
+      "pre": false,
+      "head": "Game UI element with real thickness",
+      "tail": "Tactile bevels, rich warm wood grain (#8B5A2B) or thick cream parchment (#FFF4DC), small soft green leaf or vine accent, soft ambient shadow underneath, completely empty with no text. Isolated on pure white background.",
+      "no": "text, no letters"
+    }
+  },
+  "characters": {
+    "fox": "chibi red fox cub, cream chest and muzzle, large glossy amber eyes, fluffy brush tail with white tip, wearing a leaf-green scarf (#5E8C4A) and a small brown leather satchel",
+    "bunny": "chubby white bunny, pink inner ears, rosy cheeks, warm glossy black eyes, wearing a little yellow apron with white polka dots (#F6C343)",
+    "bear": "chubby brown bear cub with round ears, soft tan belly patch, wearing a small red triangle bandana (#D9483B)",
+    "owl": "round plump brown owl, wise kind eyes, warm wood-grain feather textures, oversized circular spectacles, tiny green bow tie, holding a thick leatherbound storybook"
+  }
+}

@@ -1,12 +1,19 @@
 # 匯入 AI 生成的美術圖：依對照表改名、縮放、壓成 WebP，放進 assets/
-# 用法：python tools/import-art.py <生成圖資料夾> [對照表.json]
+# 用法：python tools/import-art.py <生成圖資料夾> [對照表.json] [--as item] [--skip-existing]
 # 對照表格式：{"<來源檔名>": "<assets 內的目標路徑>"}；沒有給就用下面的 MAP（依建立時間排序的編號）。
+# --as <類別>：來源檔名就是目標檔名（例如 1f431.webp → item/1f431），用在已照 Unicode 命名的物件圖
+# --skip-existing：assets/ 裡已經有的不覆蓋（只補新的）
 import sys, os, glob, json
 from PIL import Image
 
-src = sys.argv[1]
+argv = sys.argv[1:]
+as_kind = argv.pop(argv.index('--as') + 1) if '--as' in argv else None
+if as_kind: argv.remove('--as')
+skip_existing = '--skip-existing' in argv
+if skip_existing: argv.remove('--skip-existing')
+src = argv[0]
 root = os.path.join(os.path.dirname(__file__), '..')
-files = sorted(glob.glob(os.path.join(src, '*.png')), key=os.path.getmtime)
+files = sorted(glob.glob(os.path.join(src, '*.png')) + glob.glob(os.path.join(src, '*.webp')), key=os.path.getmtime)
 
 # 第一批（2026-10-07，113 張）：依建立時間排序後的編號 → 目標檔名
 MAP = {
@@ -48,12 +55,14 @@ def convert(path, target):
     im.save(out, 'WEBP', quality=QUAL[kind], method=6)
     return out, im.size
 
-mapping = json.load(open(sys.argv[2], encoding='utf-8')) if len(sys.argv) > 2 else None
-total = 0; done = []
+mapping = json.load(open(argv[1], encoding='utf-8')) if len(argv) > 1 else None
+total = 0; done = []; skipped = 0
 for i, f in enumerate(files):
-    target = mapping.get(os.path.basename(f)) if mapping else MAP.get(i)
-    if not target: print('略過', i, os.path.basename(f)); continue
+    base = os.path.basename(f)
+    target = as_kind + '/' + os.path.splitext(base)[0] if as_kind else (mapping.get(base) if mapping else MAP.get(i))
+    if not target: print('略過', i, base); continue
+    if skip_existing and os.path.exists(os.path.join(root, 'assets', target + '.webp')): skipped += 1; continue
     out, size = convert(f, target)
     total += os.path.getsize(out); done.append(target)
     print(f'{i:3} → assets/{target}.webp {size[0]}x{size[1]} {os.path.getsize(out)//1024}KB')
-print(len(done), '張', total // 1024, 'KB')
+print(len(done), '張', total // 1024, 'KB', f'（已有、跳過 {skipped} 張）' if skipped else '')

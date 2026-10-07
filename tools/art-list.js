@@ -107,7 +107,25 @@ const P1 = [
   ['icon', 'icon/subj-en.webp', '256x256', '是', '英文島', 'colorful wooden alphabet blocks among flowers, blank faces'],
   ['icon', 'icon/portal-lessons.webp', '256x256', '是', '入口：學習步道', 'a signpost on a forest path'],
   ['icon', 'icon/portal-library.webp', '256x256', '是', '入口：故事屋', 'a little treehouse with books in the window'],
-  ['icon', 'icon/portal-garage.webp', '256x256', '是', '入口：賽車車庫', 'a small wooden race car with leaf decorations']
+  ['icon', 'icon/portal-garage.webp', '256x256', '是', '入口：賽車車庫', 'a small wooden race car with leaf decorations'],
+  // 介面圖示（第二批，v5.1）：畫面上還在用平面 emoji 的按鈕與標題
+  ['icon', 'icon/ui-see.webp', '256x256', '是', '學習步道：認識', 'a pair of big friendly round cartoon eyes peeking over a green leaf'],
+  ['icon', 'icon/ui-song.webp', '256x256', '是', '學習步道：兒歌', 'a chunky carved wooden music note with a small green leaf'],
+  ['icon', 'icon/ui-again.webp', '256x256', '是', '再玩一次', 'a circular arrow made of a curled green vine with two leaves'],
+  ['icon', 'icon/ui-next.webp', '256x256', '是', '下一站', 'a small wooden arrow signpost pointing to the right'],
+  ['icon', 'icon/ui-play.webp', '256x256', '是', '開始（播放）', 'a round leaf-green play button made of carved wood with a cream triangle'],
+  ['icon', 'icon/ui-challenge.webp', '256x256', '是', '挑戰難一點', 'a small rocky mountain peak with a red flag on top'],
+  ['icon', 'icon/ui-gift.webp', '256x256', '是', '新裝飾／禮物', 'a small wrapped gift box with a green leaf ribbon bow'],
+  ['icon', 'icon/ui-puzzle.webp', '256x256', '是', '益智島', 'a single chunky wooden jigsaw puzzle piece with a tiny leaf'],
+  ['icon', 'icon/ui-speed.webp', '256x256', '是', '車庫：速度', 'a small carved wooden rocket with leaf fins'],
+  ['icon', 'icon/ui-engine.webp', '256x256', '是', '車庫：引擎', 'a polished brass gear cog'],
+  ['icon', 'icon/ui-tire.webp', '256x256', '是', '車庫：輪胎', 'a chunky wooden wheel with a dark rubber tire'],
+  // 頭像（動物以外的五個，改成穿裝扮的森林小動物，頭與肩膀的大頭照）
+  ['icon', 'icon/av-unicorn.webp', '256x256', '是', '頭像：獨角獸', 'head-and-shoulders portrait of a cute baby unicorn with a pastel mane, facing forward'],
+  ['icon', 'icon/av-astronaut.webp', '256x256', '是', '頭像：太空人', 'head-and-shoulders portrait of a cute raccoon kid wearing a round space helmet, facing forward'],
+  ['icon', 'icon/av-wizard.webp', '256x256', '是', '頭像：小巫師', 'head-and-shoulders portrait of a cute owlet wearing a starry wizard hat, facing forward'],
+  ['icon', 'icon/av-hero.webp', '256x256', '是', '頭像：超級英雄', 'head-and-shoulders portrait of a cute hedgehog kid with a red cape and mask, facing forward'],
+  ['icon', 'icon/av-ninja.webp', '256x256', '是', '頭像：小忍者', 'head-and-shoulders portrait of a cute red panda kid in a dark ninja hood, facing forward'],
 ];
 // 遊戲卡插圖（首頁、今日冒險、結算用），描述依遊戲玩法
 const CARD = {
@@ -146,6 +164,10 @@ K.BOOKS.forEach(b => { addE(b.cover, `《${b.title}》封面`, '故事屋封面'
 const addEn = (x, where, phase) => { addE(x.e, /^[a-z]$/i.test(x.zh) ? '' : x.zh, where, phase); for (const m of (x.e || '').matchAll(EMO)) items.get(m[0]).en.add(x.w); };
 K.EN_ALL.forEach(x => addEn(x, '英文單字', 3));
 (K.skills || []).forEach(s => { if (s.kind === 'lsound' || s.kind === 'phon') s.data.forEach(x => addEn(x, '英文拼讀', 2)); });
+// （新加的放最後，不打亂已經在生成中的物件順序）
+// 季節換皮的小島裝飾（各月份與節日）
+for (let m = 0; m < 12; m++) for (const d of [1, 12, 20, 28]) (K.season(new Date(2026, m, d)).deco || []).forEach(e => addE(e, '', '季節裝飾', 3));
+['02-17', '09-25', '06-19'].forEach(md => (K.season(new Date('2026-' + md + 'T12:00:00')).deco || []).forEach(e => addE(e, '', '季節裝飾（節日）', 3)));
 
 // ---------- 輸出 ----------
 const rows = [['編號', '階段', '類別', '檔名', '尺寸', '透明背景', '用在哪裡', '主體（中文）', '提示詞（貼到 AI 生成工具）', '狀態']];

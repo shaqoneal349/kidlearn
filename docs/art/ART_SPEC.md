@@ -167,6 +167,8 @@ node tools/build.js
 
 - `import-art.py` 依「建立時間」排序後的編號對應檔名：第 0–110 張是第一階段（對照表寫在腳本的 `MAP`），第 111 張起依 `assets.csv` 的物件順序。
   重新生成某一張、或順序不一樣時，可以另外給一份對照表：`python tools/import-art.py <資料夾> 對照表.json`（格式 `{"來源檔名.png": "item/1f353"}`）。
+- 來源已經照目標檔名命名（例如物件圖 `1f431.webp`）時，用 `--as item` 直接對應；加 `--skip-existing` 只補 `assets/` 裡還沒有的圖。來源可以是 PNG 或 WebP。
+  例：第二階段物件 `python tools/import-art.py <資料夾>/assets/item --as item --skip-existing`
 - 會自動縮放、壓成 WebP（背景 1254、角色 512、物件與遊戲卡 384、圖示 256），介面元件會裁掉透明邊。
 - `build.js` 會重新產生 `js/art-manifest.js`（有哪些圖），App 就會「有圖用圖、沒圖用 emoji」。
 - 物件圖（`assets/item/`）不預先下載，第一次出現時才存進離線快取，App 不會一次變很大。

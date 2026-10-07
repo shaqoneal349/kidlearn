@@ -12,6 +12,9 @@
   const code = e => [...e].map(c => c.codePointAt(0)).filter(c => c !== 0xFE0F).map(c => c.toString(16)).join('-');
   // 介面常用的符號也換成同風格的圖示
   const ICON = { '🪙': 'icon/coin', '⭐': 'icon/star', '❤️': 'icon/heart', '🎖️': 'icon/sticker', '🗓️': 'icon/calendar', '👪': 'icon/parent', '🔊': 'icon/sound', '💡': 'icon/hint', '🧭': 'icon/nav-explore', '🏝️': 'icon/nav-island', '📖': 'icon/nav-story', '🏠': 'icon/nav-home' };
+  // 已經畫好的角色、寵物、入口圖，也拿來代替同意思的 emoji（還沒畫的圖示見 docs/art 的「介面圖示」）
+  Object.assign(ICON, { '🦊': 'char/fox-idle', '🐣': 'char/pet-1-hatch', '🦕': 'char/pet-3-dino', '🐉': 'char/pet-4-dragon', '🐲': 'char/boss-dragon', '🗺️': 'icon/nav-island', '👑': 'char/boss-dragon', '📚': 'icon/portal-lessons', '🏎️': 'icon/portal-garage', '🐇': 'item/1f430', '🐎': 'item/1f434', '🫧': 'game/m8', '🧲': 'game/c13', '🪵': 'game/c12', '🛤️': 'game/c9', '🎰': 'game/m7',
+    '👀': 'icon/ui-see', '🎵': 'icon/ui-song', '🔁': 'icon/ui-again', '💪': 'icon/ui-challenge', '🎁': 'icon/ui-gift', '🧩': 'icon/ui-puzzle', '🚀': 'icon/ui-speed', '⚙️': 'icon/ui-engine', '🛞': 'icon/ui-tire', '🦄': 'icon/av-unicorn', '🧑‍🚀': 'icon/av-astronaut', '🧙': 'icon/av-wizard', '🦸': 'icon/av-hero', '🥷': 'icon/av-ninja' });
   const emojiURL = e => { const ic = ICON[e] || ICON[e + '️'] || ICON[e.replace(/️/g, '')]; return (ic && url(ic)) || url('item/' + code(e)); };
   const PETS = ['char/pet-0-egg', 'char/pet-1-hatch', 'char/pet-2-chick', 'char/pet-3-dino', 'char/pet-4-dragon'];
   const BOSS = { '🐙': 'char/boss-octopus', '👾': 'char/boss-star', '🐲': 'char/boss-dragon' };

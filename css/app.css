@@ -132,10 +132,9 @@ u{text-decoration-color:var(--zh);text-underline-offset:6px}
 
 /* E1 氣球 */
 .e1-sky{flex:1;position:relative;width:100%;overflow:hidden;min-height:260px}
-.balloon{position:absolute;top:100%;width:clamp(84px,17vw,132px);height:clamp(98px,20vw,152px);min-width:0;border-radius:50%;transform:translateX(-50%);animation:rise linear infinite;display:flex;align-items:center;justify-content:center;font-size:clamp(26px,5vw,42px);font-weight:800;color:#fff;padding:0;box-shadow:inset -10px -12px 0 rgba(0,0,0,.12)}
+.balloon{position:absolute;top:100%;width:clamp(84px,17vw,132px);height:clamp(98px,20vw,152px);min-width:0;border-radius:50%;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;font-size:clamp(26px,5vw,42px);font-weight:800;color:#fff;padding:0;box-shadow:inset -10px -12px 0 rgba(0,0,0,.12)}
 .balloon::after{content:'';position:absolute;bottom:-38px;left:50%;width:2px;height:38px;background:#94a3b8}
 .balloon.c0{background:#ef4444}.balloon.c1{background:#3b82f6}.balloon.c2{background:#22c55e}.balloon.c3{background:#f59e0b}.balloon.c4{background:#a855f7}.balloon.c5{background:#ec4899}
-@keyframes rise{from{top:100%}to{top:-45%}}
 .e1-sky[data-lock] .balloon{animation-play-state:paused}
 .balloon.pop{transform:translateX(-50%) scale(1.7);opacity:0;transition:.3s}
 .balloon.wrong{opacity:.3;transition:.3s}.balloon.glow{box-shadow:0 0 0 8px #bbf7d0,0 0 0 14px var(--ok);transform:translateX(-50%) scale(1.12);transition:.3s}
@@ -163,7 +162,7 @@ u{text-decoration-color:var(--zh);text-underline-offset:6px}
 @keyframes scroll{to{transform:translateX(-140px)}}
 .e5-ground{position:absolute;left:0;bottom:0;width:200%;height:30%;background:repeating-linear-gradient(90deg,transparent 0 60px,rgba(0,0,0,.08) 60px 100px)}
 .e5-runner{position:absolute;bottom:8%;left:8%;font-size:58px;transform:scaleX(-1);transition:left .5s;z-index:2}
-.e5-stage.run .e5-runner{animation:bob .25s infinite alternate}@keyframes bob{to{bottom:12%}}
+.e5-stage.run .e5-runner{animation:run-bob .25s infinite alternate}@keyframes run-bob{to{bottom:12%}}
 .e5-doors{position:absolute;left:0;right:0;bottom:28%;display:flex;justify-content:space-evenly;align-items:flex-end;padding-left:16%}
 .door{min-width:clamp(96px,22vw,200px);min-height:clamp(120px,24vh,190px);max-width:30vw;background:#fef3c7;border:6px solid #92400e;border-radius:60px 60px 6px 6px;font-size:clamp(22px,4.4vw,38px);font-weight:800;padding:6px;animation:slidein .4s}
 .door.open{background:#bbf7d0;border-color:var(--ok)}.door.bump{background:#fed7aa;animation:shake .4s}.door.show{animation:pulse .6s 2}
@@ -369,9 +368,10 @@ u{text-decoration-color:var(--zh);text-underline-offset:6px}
 .kt-pz3{display:flex;align-items:center;gap:8px;justify-content:center}.kt-pz3 .pizza{width:clamp(80px,22vw,150px)}.kt-pz3 b{font-size:32px}
 .hearts{font-size:22px;letter-spacing:2px;white-space:nowrap}
 .gs.s-boss .groot.shake{animation:shake .4s}
-.balloon{animation:rise var(--dur,9s) ease-out forwards, bob 2.2s ease-in-out infinite alternate}
-@keyframes rise{from{top:100%}to{top:10%}}
-@keyframes bob{from{margin-top:0}to{margin-top:14px}}
+/* 動畫名稱不可和其他檔案重複（曾因 star.css 的 rise 蓋掉這裡，氣球停在底部飄不上來） */
+.balloon{animation:bal-rise var(--dur,9s) ease-out forwards, bal-bob 2.2s ease-in-out infinite alternate}
+@keyframes bal-rise{from{top:100%}to{top:10%}}
+@keyframes bal-bob{from{margin-top:0}to{margin-top:14px}}
 .e1-sky[data-lock] .balloon{animation-play-state:paused}
 .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:60;background:#1f2937;color:#fff;border-radius:999px;padding:12px 20px;font-size:16px;font-weight:700;box-shadow:0 10px 30px rgba(0,0,0,.3);min-height:48px;max-width:92vw}
 .hold{min-width:200px;position:relative;overflow:hidden}.hold.on::after{content:'';position:absolute;left:0;top:0;bottom:0;width:0;background:rgba(255,255,255,.35);animation:fillbar 2s linear forwards}
@@ -432,6 +432,7 @@ body.zyon .groot,body.zyon .groot .q-ask,body.zyon .groot .q-main,body.zyon .gro
 .zb-lbl{flex:0 0 3.2em;font-weight:800;color:#475569;font-size:16px}
 .zb-opts{flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .zb-opt{min-height:58px;min-width:0;border:3px solid #cbd5e1;box-shadow:0 4px 0 #cbd5e1;padding:2px}.zb-opt .zy{font-size:28px;letter-spacing:0}
+.zb-opt .zb-none{font-size:16px;font-weight:800;color:#64748b}
 .zb-opt.tn{display:flex;flex-direction:column;align-items:center;line-height:1.1}.zb-opt.tn b{font-size:24px}.zb-opt.tn small{font-size:13px}
 .zb-opt.on{border-color:var(--brand);background:#dbeafe;box-shadow:0 4px 0 #1d4ed8}
 .q-ask.tap{cursor:pointer}.q-ask.tap::after{content:" 🔈";font-size:.8em;opacity:.6}

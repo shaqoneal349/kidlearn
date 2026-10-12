@@ -121,3 +121,166 @@ body.art .mascot{z-index:1}
 body.art .hunt-scene.park{background:linear-gradient(rgba(255,255,255,.15),rgba(255,255,255,.15)),var(--bg-game-en) center/cover}
 body.art .hunt-scene.room{background:linear-gradient(rgba(255,255,255,.15),rgba(255,255,255,.15)),var(--bg-game-zh) center/cover}
 body.art .hunt-scene.sea{background:linear-gradient(rgba(255,255,255,.1),rgba(255,255,255,.1)),var(--bg-home-island) center/cover}
+
+/* ---------- v5.4 遊戲內元件：把每款遊戲裡的磁磚、卡片、場景都換成同一套木頭與羊皮紙 ---------- */
+/* 共用：木框小卡（字母磁磚、數字鍵、連連看卡、注音選項、門、井字棋隊伍…） */
+body.art .tile,body.art .kp-k,body.art .mt-card,body.art .zb-opt,body.art .door,body.art .gd-opt,body.art .ttt-team,body.art .pz-key,body.art .c4-ch:not(:disabled),body.art .st-card,body.art .mw-mag,body.art .hv-cell.used,body.art .cal .cd,body.art .gd-ex,body.art .tn-card,body.art .bk-nav.prev{
+  border:12px solid transparent;border-image:var(--ui-option-card) 64 fill / 12px stretch;background:none;box-shadow:0 4px 8px rgba(60,30,0,.15);color:#3d2610;text-shadow:0 1px 0 #fff}
+body.art .tile.hint,body.art .tile.show,body.art .door.open,body.art .mt-card.done,body.art .c4-ch.fixed,body.art .gd-opt.right,body.art .gd-ex.ok,body.art .tn-card.ok{border-image-source:var(--ui-option-right);background:none}
+body.art .door.bump,body.art .mt-card.no,body.art .c4-ch.caught,body.art .gd-opt.wrong,body.art .zb-car.bad{border-image-source:var(--ui-option-wrong);background:none}
+body.art .zb-opt.on,body.art .mt-card.on,body.art .tile.tn,body.art .kp-k.go,body.art .pz-key.big,body.art .cal .cd.mk{border-image-source:var(--ui-btn-yellow);border-image-slice:60;background:none;color:#5a3412}
+body.art .tile.used{visibility:hidden}
+body.art .kp-k{min-width:76px}
+body.art .zb-opt{border-width:8px;border-image-width:8px;min-height:60px;padding:0}body.art .zb-opt .zy{font-size:26px;white-space:nowrap}body.art .zb-opts{gap:6px}body.art .kp{grid-template-columns:repeat(3,84px)}
+body.art .mw-mag{width:82px;height:82px;min-width:82px;color:#5a3412;text-shadow:0 1px 0 #fff;font-size:42px}
+body.art .mw-mag.zy{border-image-source:var(--ui-option-card);color:#b4232c}
+body.art .mw-mags{background:rgba(122,77,34,.18);box-shadow:inset 0 3px 8px rgba(60,30,0,.25);border-radius:22px}
+body.art .st-card{box-shadow:0 6px 10px rgba(60,30,0,.2)}
+body.art .door{border-width:16px;border-image-width:16px;border-radius:0;color:#3d2610}
+body.art .c4-ch{min-width:56px;min-height:72px}
+body.art .cal .cd{height:46px;border-width:8px;border-image-width:8px;border-radius:0}
+body.art .cal .cd.we{color:#b4232c}body.art .cal .cd.td{outline:3px solid #2563eb;outline-offset:-2px}
+
+/* 共用：羊皮紙面板（輸送帶、短文、月曆、機器、數獨…） */
+body.art .e3-belt,body.art .rd-pass,body.art .cal,body.art .ttt-score,body.art .kp-disp,body.art .m3-sum,body.art .zb-car,body.art .mw-pic,body.art .mw-word,body.art .pz-goals span,body.art .pz-learn,body.art .pz-mi,body.art .am-nl,body.art .sdk,body.art .spell,body.art .pb-big,body.art .gd-plate,body.art .bm,body.art .tt-next,body.art .mg-eq{
+  border:18px solid transparent;border-image:var(--ui-panel-paper) 118 fill / 18px stretch;background:none;box-shadow:0 6px 12px rgba(60,30,0,.15);color:#3d2610}
+body.art .kp-disp,body.art .m3-sum,body.art .zb-car,body.art .ttt-score,body.art .pz-goals span,body.art .pz-mi,body.art .pb-big,body.art .spell,body.art .tt-next,body.art .mg-eq{border-width:12px;border-image-width:12px;border-radius:0}
+body.art .kp-disp.right,body.art .m3-sum.right{border-image-source:var(--ui-option-right);border-image-slice:64}
+body.art .kp-disp.wrong,body.art .m3-sum.wrong{border-image-source:var(--ui-option-wrong);border-image-slice:64}
+body.art .zb-train.ok .zb-car{border-image-source:var(--ui-option-right);border-image-slice:64;background:none}
+body.art .zb-train.shown .zb-car{border-image-source:var(--ui-btn-yellow);border-image-slice:60;background:none}
+body.art .rd-pass{font-size:clamp(19px,3.2vw,24px)}
+body.art .rd-s{color:#3d2610}
+body.art .rd-pass[data-step="2"] .rd-s{background:rgba(122,77,34,.12);border-bottom-color:#a8743f}
+/* 對話框：有尾巴的羊皮紙 */
+body.art .m3-bubble,body.art .c5-bubble,body.art .tk-bub,body.art .tk-me{border:24px solid transparent;border-image:var(--ui-bubble) 130 fill / 24px stretch;background:none;box-shadow:none;color:#3d2610;min-width:200px}
+body.art .tk-me{border-image-source:var(--ui-option-right);border-image-slice:64;border-width:16px;border-image-width:16px}
+/* 虛線放置區：木色虛線＋淡羊皮紙 */
+body.art .e4-ans,body.art .m3-tray,body.art .slot.big,body.art .mw-slot,body.art .car{border-color:#b48a5a;background:rgba(255,248,230,.75)}
+body.art .e4-ans.right{border-style:solid;border-color:#5e8c4a;background:#dcf5c8}
+body.art .e4-ans.shown{border-color:#d97706}
+body.art .car.fill,body.art .mw-slot.fill,body.art .slot.fill{border-color:#5e8c4a;background:#fff8e6}
+body.art .slot:not(.big){background:rgba(255,248,230,.8);border-bottom-color:#a8743f;color:#3d2610}
+body.art .e3-slots.done .slot{background:#dcf5c8;border-bottom-color:#5e8c4a}
+body.art .e3-belt{min-height:120px}
+body.art .e3-zh{color:#3f7a2a}
+body.art .combo,body.art .m4-msg,body.art .hunt-msg,body.art .c1-ans,body.art .pb-list,body.art .mg-eq small,body.art .pz-lv{color:#5a3412;text-shadow:0 1px 0 rgba(255,255,255,.7)}
+body.art .m4-msg.right,body.art .hunt-msg{color:#3f7a2a}body.art .m4-msg.wrong{color:#b4232c}
+body.art .m2-hud,body.art .pz-pill,body.art .ttt-status,body.art .st-left{background:rgba(255,248,230,.88);color:#5a3412;border-radius:999px;padding:4px 14px;box-shadow:0 3px 0 #a8743f;border:0}
+body.art .st-left{white-space:nowrap;font-size:14px;line-height:1.3}
+
+/* 氣球：有光澤的繪本氣球＋棕色線 */
+body.art .balloon{box-shadow:inset -10px -14px 0 rgba(0,0,0,.14),inset 8px 10px 14px rgba(255,255,255,.35),0 8px 10px rgba(60,30,0,.18);background-image:radial-gradient(circle at 32% 26%,rgba(255,255,255,.75) 0 10%,rgba(255,255,255,0) 32%)}
+body.art .balloon.c0{background-color:#e85d4a}body.art .balloon.c1{background-color:#4a8fe0}body.art .balloon.c2{background-color:#5cb85c}body.art .balloon.c3{background-color:#f3b43c}body.art .balloon.c4{background-color:#a46ee0}body.art .balloon.c5{background-color:#ee6fa6}
+body.art .balloon::after{background:#8b5a2b;width:3px}
+body.art .balloon.glow{box-shadow:0 0 0 8px #d9f0c0,0 0 0 14px #5e8c4a}
+/* 釣魚池：木框池塘、有光澤的魚 */
+body.art .m1-pond{background:radial-gradient(circle at 20% 15%,rgba(255,255,255,.35) 0 60px,transparent 62px),linear-gradient(#9fdcf2,#3fa7d6 70%,#2c8bb8);border:6px solid #a8743f;box-shadow:0 6px 0 #7a4d22,inset 0 0 0 4px rgba(255,255,255,.35)}
+body.art .m1-pond.line{background:linear-gradient(#e8f6fb,#bfe6f5)}
+body.art .fish{box-shadow:inset 0 -8px 0 rgba(0,0,0,.12),inset 6px 8px 10px rgba(255,255,255,.35),0 6px 8px rgba(0,40,80,.25);text-shadow:0 1px 0 rgba(0,0,0,.2)}
+body.art .fish.glow{box-shadow:0 0 0 8px #d9f0c0,0 0 0 14px #5e8c4a}
+/* 跑酷：用英文島背景當舞台 */
+body.art .e5-stage{background:linear-gradient(rgba(255,255,255,0) 0 60%,rgba(120,170,90,.85) 70%),var(--bg-game-en) center/cover;border:6px solid #a8743f;box-shadow:0 6px 0 #7a4d22}
+body.art .e5-sky{display:none}
+body.art .e5-ground{background:repeating-linear-gradient(90deg,transparent 0 60px,rgba(60,30,0,.12) 60px 100px),linear-gradient(#8fc46a,#5e8c4a)}
+/* 分類木樁：小島海景 */
+body.art .st-posts{background:linear-gradient(rgba(255,255,255,.05),rgba(0,60,120,.15)),var(--bg-home-island) center 70%/cover;border:6px solid #a8743f;box-shadow:0 6px 0 #7a4d22}
+body.art .st-sign{background:linear-gradient(#fde9a8,#d9a441);color:#4a2e14;box-shadow:0 5px 0 #7a4d22,inset 0 2px 0 rgba(255,255,255,.6);border:3px solid #a8743f}
+body.art .st-post small{color:#fff8e6}
+body.art .st-chip{background:#fff8e6;box-shadow:0 2px 0 #a8743f;color:#3d2610}
+body.art .pop-sky{background:linear-gradient(rgba(255,255,255,.1),rgba(255,255,255,.1)),var(--bg-game-en) center/cover;border:6px solid #a8743f;box-shadow:0 6px 0 #7a4d22}
+/* 加法機器：木頭機器、羊皮紙框 */
+body.art .am-machine{background:linear-gradient(#b07a45,#8b5a2b);box-shadow:0 8px 0 #5a3412,inset 0 2px 0 rgba(255,255,255,.35)}
+body.art .am-frame{background:#fff8e6;box-shadow:inset 0 0 0 3px #d9b98a}
+body.art .am-screen{background:#2d1b0e;color:#fde68a;box-shadow:inset 0 0 0 3px #5a3412}
+body.art .am-lever{background:#e8d6b8;box-shadow:inset 0 4px 8px rgba(60,30,0,.35)}
+body.art .am-op{color:#fff8e6}
+body.art .nl2{border-top-color:#a8743f}body.art .nl2 .t::before{background:#8b5a2b}body.art .nl2 .t.on::before{background:#5e8c4a}
+/* 幾何格子、數獨、井字棋：羊皮紙格＋木框 */
+body.art .m4-grid{padding:8px;background:linear-gradient(#b07a45,#8b5a2b);border-radius:14px;box-shadow:0 6px 0 #5a3412}
+body.art .cell{background:#fff8e6;border-color:#d9b98a;border-radius:6px}
+body.art .cell.on{background:#f3b43c;border-color:#b45309}body.art .cell.fx{background:#4a8fe0;border-color:#1d4ed8}body.art .cell.no{background:#e8d6b8;border-color:#d9b98a}
+body.art .m4-grid.sym .cell:nth-child(6n+3){box-shadow:5px 0 0 -1px #b4232c}
+body.art .sdk{border-radius:0;overflow:visible}
+body.art .sc{background:#fff8e6;border-color:#d9b98a}body.art .sc.giv{background:#f3e8d2}body.art .sc.mine{background:#dcf5c8;color:#2f5f1f}body.art .sc.sel{background:#fde68a;outline-color:#f3b43c}
+body.art .sc.bl{border-left:4px solid #8b5a2b}body.art .sc.bt{border-top:4px solid #8b5a2b}
+body.art .ttt-board{background:linear-gradient(#b07a45,#8b5a2b);box-shadow:0 6px 0 #5a3412}
+body.art .ttt-c{background:#fff8e6;box-shadow:inset 0 -3px 0 #d9b98a}body.art .ttt-c.taken{background:#f3e8d2}body.art .ttt-c.win{background:linear-gradient(#fde68a,#f3b43c)}
+body.art .ttt-mk{background:rgba(255,248,230,.6)}
+/* 翻牌：正面木框卡、翻開是羊皮紙 */
+body.art .mcard{border:12px solid transparent;border-image:var(--ui-frame-card) 70 fill / 12px stretch;background:none;box-shadow:0 5px 8px rgba(60,30,0,.2);color:#3d2610}
+body.art .mcard .mc-f{font-size:1.1em}
+body.art .mcard.on{border-image-source:var(--ui-option-card);border-image-slice:64}
+body.art .mcard.ok{border-image-source:var(--ui-option-right);border-image-slice:64;opacity:.8}
+body.art .mgrid.forest .mcard{border-image-source:var(--ui-frame-card);border-image-slice:70;background:none}
+body.art .mgrid.forest .mcard.on{border-image-source:var(--ui-option-card);border-image-slice:64;background:none}
+body.art .mgrid.forest .mcard.ok{border-image-source:var(--ui-option-right);border-image-slice:64;background:none}
+/* 列車、筆順、部件 */
+body.art .car{border-radius:12px 12px 20px 20px}
+body.art .c2-box{border-color:#a8743f;box-shadow:0 6px 0 #7a4d22;background:linear-gradient(#f3d9c4,#f3d9c4) center/2px 100% no-repeat,linear-gradient(#f3d9c4,#f3d9c4) center/100% 2px no-repeat,#fff8e6}
+body.art .c2-box.done{border-color:#5e8c4a;box-shadow:0 0 0 6px #d9f0c0}
+body.art .c3-alive small{color:#8b5a2b}
+/* 店長：硬幣加光澤 */
+body.art .coin{box-shadow:inset 0 -4px 0 rgba(0,0,0,.15),inset 0 3px 0 rgba(255,255,255,.6),0 4px 0 rgba(60,30,0,.3);border-color:rgba(90,52,18,.35);color:#3d2610}
+body.art .m3-cust.has-art{width:90px;height:90px}
+/* 廚房 */
+body.art .kt-bowl,body.art .kt-plate,body.art .fd-plate{background:radial-gradient(#fff8e6 55%,#eadcc3);border-color:#c9a06a;box-shadow:0 6px 0 #a8743f}
+body.art .kt-add{border-color:#a8743f;box-shadow:0 5px 0 #7a4d22;background:linear-gradient(#fde9a8,#f3b43c);color:#4a2e14}
+body.art .kt-cup{border-color:#8b5a2b;background:#fff8e6}body.art .kt-cell{border-top-color:#d9b98a}body.art .kt-cell.on{background:#f59e0b}
+body.art .fd-basket{background:linear-gradient(#fde9a8,#d9a441);box-shadow:0 5px 0 #7a4d22}
+/* 泡泡數字 */
+body.art .pb-b{box-shadow:inset 0 -3px 0 rgba(0,0,0,.1),0 2px 3px rgba(60,30,0,.15)}
+body.art .pb-b.popped{box-shadow:inset 0 0 0 2px #d9b98a;color:#b48a5a}
+body.art .pb-big{width:110px;height:110px;font-size:40px;color:#5a3412;background:none}
+/* 成語蜂巢 */
+body.art .hv{background:none}
+body.art .hv-board{background:linear-gradient(#b07a45,#8b5a2b);box-shadow:0 6px 0 #5a3412}
+body.art .hv-slot{background:#fff8e6;color:#5a3412}body.art .hv-slot.show{color:#b4232c}
+/* 拼讀卡、整句 */
+body.art .sp-syms b{background:#f3e8d2;color:#b48a5a}body.art .sp-syms b.on{background:linear-gradient(#fde9a8,#f3b43c);color:#5a3412;box-shadow:0 4px 0 #b45309}
+body.art .sp-c{color:#3d2610}body.art .sp-all{color:#d9b98a}body.art .spell.all .sp-all{color:#b4232c}
+body.art .full-say{background:linear-gradient(#e6f4d6,#c9e6ad);color:#2f5f1f;box-shadow:0 4px 0 #5e8c4a}
+body.art .mw-slot{color:#2563eb}
+/* 情境對話、擂台 */
+body.art .tk-npc.has-art,body.art .c5-face.has-art{width:110px;height:110px}
+body.art .tk-bub small,body.art .tk-me small{color:#8b5a2b}
+/* 益智島：關卡地圖、按鍵、棋盤都換成木頭與羊皮紙 */
+body.art .pz-map .pz-mt h1{color:#4a2e14}body.art .pz-map .pz-mt p{color:#6b3f17}
+body.art .pz-learn{font-size:15px;color:#5a3412;border-width:14px;border-image-width:14px}
+body.art .pz-node{border:0;background:var(--ui-btn-round) center/contain no-repeat;box-shadow:none;color:#5a3412}
+body.art .pz-node b{color:#5a3412}body.art .pz-node small{color:#d97706}
+body.art .pz-node.cur{background:radial-gradient(circle,#fde68a 0 46%,transparent 48%),var(--ui-btn-round) center/contain no-repeat}
+body.art .pz-node.cur b{color:#4a2e14}
+body.art .pz-node.done{background:radial-gradient(circle,#d9f0c0 0 46%,transparent 48%),var(--ui-btn-round) center/contain no-repeat}
+body.art .pz-node.lock{opacity:.5}
+body.art .gs.pz-gs{background:linear-gradient(rgba(255,246,226,.45),rgba(255,246,226,.65)),var(--bg-puzzle) center/cover}
+body.art .pz-goals span.ok{border-image-source:var(--ui-option-right);border-image-slice:64}
+body.art .pz-goals b{color:#4a2e14}body.art .pz-goals small{color:#8b5a2b}
+body.art .pz-key{min-height:60px;color:#5a3412;font-size:19px}
+body.art .pz-key.big{color:#5a3412}
+body.art .pz-flash{background:#5a3412;color:#fde68a}
+body.art .m3-grid{background:linear-gradient(#b07a45,#8b5a2b);box-shadow:0 6px 0 #5a3412}
+body.art .m3-c{background:#fff8e6;box-shadow:0 2px 0 rgba(60,30,0,.25)}
+body.art .m3-c.sel{background:#fde68a}
+body.art .m3-c.sp{background:radial-gradient(circle,#fff8e6 40%,#fde68a);box-shadow:0 0 0 3px #f3b43c inset}
+body.art .tt-board{background:#3d2610;border-color:#5a3412}body.art .tt-board i{background:#5a3f2a}
+body.art .mg-grid{background:linear-gradient(#b07a45,#8b5a2b);box-shadow:0 6px 0 #5a3412}
+body.art .mg-c{background:rgba(255,248,230,.35);color:#5a3412}body.art .mg-c.v2{background:#fff8e6}body.art .mg-c.v4{background:#fdf3c4}body.art .mg-c.v8{background:#fde68a}
+body.art .bk-board{background:linear-gradient(#b07a45,#8b5a2b);box-shadow:0 6px 0 #5a3412}body.art .bk-c{background:#fff8e6}
+body.art .bk-p.sel{background:#fff8e6;box-shadow:0 0 0 3px #f3b43c}
+body.art .bs-tube{background:linear-gradient(90deg,rgba(255,248,230,.95),rgba(240,228,205,.85));border-color:#a8743f;box-shadow:0 4px 0 #7a4d22}
+body.art .bs-tube.up{border-color:#f3b43c}body.art .bs-tube.full{border-color:#5e8c4a;box-shadow:0 4px 0 #3f7a2a,0 0 14px rgba(94,140,74,.5)}
+/* 學習步道引導畫面 */
+body.art .gd-sym{background:linear-gradient(#fff8e6,#f3e8d2);box-shadow:0 8px 0 #a8743f,0 14px 26px rgba(60,30,0,.15);color:#b4232c}
+body.art .gs.s-en .gd-sym{box-shadow:0 8px 0 #a8743f;color:#1d6fa5}body.art .gs.s-ma .gd-sym{box-shadow:0 8px 0 #a8743f;color:#c2410c}
+body.art .gd-ask{background:rgba(255,248,230,.95);color:#4a2e14;box-shadow:0 3px 0 #a8743f}
+body.art .gd-next{background:linear-gradient(#8fc46a,#5e8c4a);box-shadow:0 6px 0 #3f7a2a,0 10px 18px rgba(63,122,42,.35)}
+body.art .gd-ex,body.art .tn-card{border-width:14px;border-image-width:14px;box-shadow:0 6px 10px rgba(60,30,0,.15)}
+body.art .tf{background:#fff8e6;box-shadow:0 6px 0 #a8743f}body.art .tf-c{background:#fff8e6;border-color:#d9b98a}
+body.art .bm{background:none;border-width:22px;border-image-width:22px}
+body.art .bm-in{background:#2d1b0e}
+/* 選項卡裡「國字＋注音＋詞」三層時，卡片要夠高，詞才不會被木框切掉 */
+body.art .opt{padding:12px 8px}
+body.art .opt .zsc{line-height:1.05}body.art .opt .zsc small{margin-top:4px}
+/* 小狐夥伴站在左下角：手機上內容多時別擋到最後一排按鈕 */
+@media (max-width:600px){body.art .groot{padding-bottom:72px}body.art .groot.g-e1,body.art .groot.g-m1,body.art .groot.g-e5,body.art .groot.g-c11,body.art .groot.g-e8{padding-bottom:16px}body.art .mascot{width:64px}}

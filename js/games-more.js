@@ -85,7 +85,7 @@
         top.replaceChildren(h('div', 'q-box', null, h('div', 'q-ask', { text: '這個字怎麼拼？依序選出聲母、韻母、聲調' }),
           h('div', 'q-row', null, h('div', 'q-main', null, h('span', 'zhc', { text: it.c }), h('small', 'zb-w', { text: it.w })), h('button', 'q-snd', { text: '🔊', 'aria-label': '再聽一次', onclick: say }))));
         const cars = h('div', 'zb-train', null, h('span', 'zb-eng', { text: '🚂' }), steps.map(s => h('div', 'zb-car', { 'data-k': s.key }, h('small', null, { text: s.label }), h('b', null, { text: '？' }))));
-        const rows = steps.map(s => h('div', 'zb-row', null, h('span', 'zb-lbl', { text: s.label }), h('div', 'zb-opts', null, s.choices.map(c => h('button', 'zb-opt' + (s.key === 'tone' ? ' tn' : ''), { 'data-k': s.key, 'data-v': c, html: s.key === 'tone' ? `<b>${c === 'ˉ' ? '—' : c}</b><small>${TN[c]}</small>` : `<span class="zy">${c}</span>` })))));
+        const rows = steps.map(s => h('div', 'zb-row', null, h('span', 'zb-lbl', { text: s.label }), h('div', 'zb-opts', null, s.choices.map(c => h('button', 'zb-opt' + (s.key === 'tone' ? ' tn' : ''), { 'data-k': s.key, 'data-v': c, html: s.key === 'tone' ? `<b>${c === 'ˉ' ? '—' : c}</b><small>${TN[c]}</small>` : c === NONE ? '<small class="zb-none">沒有</small>' : `<span class="zy">${c}</span>` })))));
         const go = h('button', 'btn pri go', { text: '✔ 檢查', disabled: '' });
         work.replaceChildren(cars, ...rows, go);
         const paint = () => {

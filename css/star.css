@@ -298,10 +298,10 @@ body.rm .choices.stag .opt{animation:none}
 
 /* ---------- 步道小遊戲：泡泡、餵小熊 ---------- */
 .pop-sky{position:relative;flex:1;margin:6px 10px;border-radius:24px;overflow:hidden;background:linear-gradient(#bae6fd,#e0f2fe 60%,#f0f9ff)}
-.pop-b{position:absolute;bottom:-120px;width:100px;height:100px;min-width:0;border-radius:50%;font-size:48px;font-weight:900;color:#0f172a;background:radial-gradient(circle at 30% 30%,#fff 0 15%,hsla(var(--h),90%,80%,.85) 45%,hsla(var(--h),80%,60%,.85));box-shadow:inset 0 -4px 0 rgba(0,0,0,.08);animation:rise 3.2s ease-out forwards}
+.pop-b{position:absolute;bottom:-120px;width:100px;height:100px;min-width:0;border-radius:50%;font-size:48px;font-weight:900;color:#0f172a;background:radial-gradient(circle at 30% 30%,#fff 0 15%,hsla(var(--h),90%,80%,.85) 45%,hsla(var(--h),80%,60%,.85));box-shadow:inset 0 -4px 0 rgba(0,0,0,.08);animation:pop-rise 3.2s ease-out forwards}
 .pop-b.zy{font-family:"KidKai","BiauKai",serif}
 .pop-b.gone{animation:none;transform:scale(1.6);opacity:0;transition:all .35s}
-@keyframes rise{to{bottom:calc(30% + var(--h) * .1%)}}
+@keyframes pop-rise{to{bottom:calc(30% + var(--h) * .1%)}}
 .feed{flex:1;display:flex;align-items:center;justify-content:center;gap:16px;padding:10px;flex-wrap:wrap}
 .fd-bear{font-size:110px}
 .fd-mid{display:flex;flex-direction:column;align-items:center;gap:6px}
@@ -359,7 +359,7 @@ body.rm .choices.stag .opt{animation:none}
 .rv-foot .btn{min-height:56px}
 .gs.reader .gbar{gap:6px}.gs.reader .gname{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
 .pop-b{width:min(100px,16vw);height:min(100px,16vw);font-size:min(48px,8vw)}
-@media (max-width:480px){.fd-bear{font-size:70px}.fd-plate{min-height:110px;padding:12px 20px}.st-post{min-height:170px}.st-pole{height:40px}.mw-mag{width:60px;height:60px;min-width:60px;font-size:34px}.mw-slot{width:68px;height:68px}.mw-e{font-size:60px}}
+@media (max-width:480px){.gd-sym{min-width:132px;min-height:132px;font-size:88px}.gd-sym.lo{font-size:76px}.gd-pair{gap:12px}.fd-bear{font-size:70px}.fd-plate{min-height:110px;padding:12px 20px}.st-post{min-height:170px}.st-pole{height:40px}.mw-mag{width:60px;height:60px;min-width:60px;font-size:34px}.mw-slot{width:68px;height:68px}.mw-e{font-size:60px}}
 @media (max-width:520px){.ls-unit,.ls-unit.r{margin:0}.ls-acts{flex-wrap:nowrap}.ls-act{min-width:0;flex:1;padding:4px 4px}.ls-num{width:42px;height:42px;font-size:20px}}
 /* 注音輔助識字的選項：國字＋注音＋所在的詞 */
 .zsc{display:inline-flex;flex-direction:column;align-items:center;line-height:1.1}
